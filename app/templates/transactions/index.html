@@ -82,7 +82,7 @@
                                             {% endif %}
                                         </td>
                                         <td class="text-end {% if transaction.transaction_type == 'income' %}text-success{% else %}text-danger{% endif %}">
-                                            <strong>{% if transaction.transaction_type == 'income' %}+{% else %}-{% endif %}${{ "%.2f"|format(transaction.amount) }}</strong>
+                                            <strong>{% if transaction.transaction_type == 'income' %}+{% else %}-{% endif %}{{ currency_symbol }}{{ "%.2f"|format(transaction.amount) }}</strong>
                                         </td>
                                         <td class="text-end">
                                             <a href="{{ url_for('transactions.edit', transaction_id=transaction.id) }}" class="btn btn-sm btn-outline-primary">

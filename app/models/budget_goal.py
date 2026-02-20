@@ -104,6 +104,19 @@ class BudgetGoal(db.Model):
         onupdate=datetime.utcnow
     )
     
+    # Relationships
+    category = db.relationship(
+        'Category',
+        backref=db.backref('budget_goals', lazy='dynamic'),
+        lazy='joined'
+    )
+    # Why lazy='joined'?
+    # - Eager loading: category loaded with budget goal
+    # - Avoids N+1 query problem
+    # - We almost always need category name when displaying budgets
+    
+    # Note: user relationship is defined in User model via backref
+    
     # Constraints
     __table_args__ = (
         # Ensure amount is positive

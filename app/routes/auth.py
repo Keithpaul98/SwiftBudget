@@ -215,6 +215,7 @@ def dashboard():
     """
     from app.services.transaction_service import TransactionService
     from app.services.category_service import CategoryService
+    from app.services.budget_service import BudgetService
     
     # Get current month summary
     summary = TransactionService.get_spending_summary(current_user.id)
@@ -228,10 +229,16 @@ def dashboard():
     # Get user categories
     categories = CategoryService.get_user_categories(current_user.id)
     
+    # Get budget statuses
+    budget_statuses = BudgetService.get_all_budget_statuses(current_user.id)
+    alert_budgets = BudgetService.get_budgets_needing_alerts(current_user.id)
+    
     return render_template(
         'dashboard/index.html',
         title='Dashboard',
         summary=summary,
         recent_transactions=recent_transactions,
-        categories=categories
+        categories=categories,
+        budget_statuses=budget_statuses,
+        alert_budgets=alert_budgets
     )

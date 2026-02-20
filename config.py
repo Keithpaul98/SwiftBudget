@@ -51,6 +51,10 @@ class Config:
     GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
     GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
+    
+    # Currency Configuration
+    CURRENCY_SYMBOL = os.getenv('CURRENCY_SYMBOL', 'MK')
+    CURRENCY_CODE = os.getenv('CURRENCY_CODE', 'MWK')  # Malawi Kwacha
     MAIL_DEFAULT_SENDER = ('SwiftBudget', os.getenv('MAIL_USERNAME'))
     
     # Rate Limiting (Flask-Limiter)

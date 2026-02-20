@@ -10,6 +10,5 @@ Why separate forms?
 # Import forms here for easy access
 from app.forms.auth import SignupForm, LoginForm
 from app.forms.transaction import TransactionForm, TransactionFilterForm
-
-# Future forms (Module 6+)
-# from app.forms.budget import BudgetGoalForm
+from app.forms.budget import BudgetGoalForm
+from app.forms.project import ProjectForm

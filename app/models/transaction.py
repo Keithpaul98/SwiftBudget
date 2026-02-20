@@ -119,6 +119,18 @@ class Transaction(db.Model):
     # - If category deleted, transactions should remain (set to "Uncategorized")
     # - Or prevent category deletion if it has transactions
     
+    project_id = db.Column(
+        db.Integer,
+        db.ForeignKey('projects.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True
+    )
+    # Why project_id?
+    # - Optional: transactions can exist without projects
+    # - Groups related transactions (e.g., "Parents Shopping")
+    # - SET NULL: if project deleted, transaction remains but loses project link
+    # - Nullable: not all transactions belong to project
+    
     # Timestamps
     created_at = db.Column(
         db.DateTime,

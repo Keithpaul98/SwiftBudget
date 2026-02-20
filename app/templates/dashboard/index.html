@@ -16,7 +16,7 @@
             <div class="card text-white bg-success">
                 <div class="card-body">
                     <h5 class="card-title">Total Income</h5>
-                    <h2 class="mb-0">${{ "%.2f"|format(summary.total_income) }}</h2>
+                    <h2 class="mb-0">{{ currency_symbol }}{{ "%.2f"|format(summary.total_income) }}</h2>
                 </div>
             </div>
         </div>
@@ -24,7 +24,7 @@
             <div class="card text-white bg-danger">
                 <div class="card-body">
                     <h5 class="card-title">Total Expenses</h5>
-                    <h2 class="mb-0">${{ "%.2f"|format(summary.total_expenses) }}</h2>
+                    <h2 class="mb-0">{{ currency_symbol }}{{ "%.2f"|format(summary.total_expenses) }}</h2>
                 </div>
             </div>
         </div>
@@ -32,11 +32,30 @@
             <div class="card text-white {% if summary.net_balance >= 0 %}bg-primary{% else %}bg-warning{% endif %}">
                 <div class="card-body">
                     <h5 class="card-title">Net Balance</h5>
-                    <h2 class="mb-0">${{ "%.2f"|format(summary.net_balance) }}</h2>
+                    <h2 class="mb-0">{{ currency_symbol }}{{ "%.2f"|format(summary.net_balance) }}</h2>
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- Budget Alerts -->
+    {% if alert_budgets %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning alert-dismissible fade show">
+                <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Budget Alerts</h5>
+                <p>You have {{ alert_budgets|length }} budget(s) over {{ alert_budgets[0].alert_threshold }}% threshold:</p>
+                <ul class="mb-0">
+                    {% for budget in alert_budgets %}
+                    <li><strong>{{ budget.category.name }}</strong> - {{ "%.0f"|format(budget.get_percentage_used()) }}% used ({{ currency_symbol }}{{ "%.2f"|format(budget.get_current_period_spending()) }} of {{ currency_symbol }}{{ "%.2f"|format(budget.amount) }})</li>
+                    {% endfor %}
+                </ul>
+                <a href="{{ url_for('budgets.index') }}" class="btn btn-sm btn-warning mt-2">View Budget Goals</a>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     
     <!-- Quick Actions -->
     <div class="row mb-4">
@@ -47,13 +66,52 @@
                     <a href="{{ url_for('transactions.create') }}" class="btn btn-primary me-2">
                         <i class="bi bi-plus-circle"></i> Add Transaction
                     </a>
-                    <a href="{{ url_for('transactions.index') }}" class="btn btn-outline-primary">
+                    <a href="{{ url_for('transactions.index') }}" class="btn btn-outline-primary me-2">
                         <i class="bi bi-list-ul"></i> View All Transactions
+                    </a>
+                    <a href="{{ url_for('budgets.index') }}" class="btn btn-outline-success">
+                        <i class="bi bi-piggy-bank"></i> Manage Budgets
                     </a>
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- Budget Overview -->
+    {% if budget_statuses %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Budget Overview</h5>
+                    <a href="{{ url_for('budgets.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    {% for status in budget_statuses[:3] %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span><strong>{{ status.category_name }}</strong> ({{ status.period }})</span>
+                            <span class="{% if status.is_over_budget %}text-danger{% endif %}">
+                                {{ currency_symbol }}{{ "%.2f"|format(status.current_spending) }} / {{ currency_symbol }}{{ "%.2f"|format(status.budget_amount) }}
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar 
+                                {% if status.is_over_budget %}bg-danger
+                                {% elif status.should_alert %}bg-warning
+                                {% else %}bg-success{% endif %}" 
+                                role="progressbar" 
+                                style="width: {{ [status.percentage_used, 100]|min }}%">
+                                {{ "%.0f"|format(status.percentage_used) }}%
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     
     <!-- Recent Transactions -->
     <div class="row">
@@ -92,7 +150,7 @@
                                             {% endif %}
                                         </td>
                                         <td class="text-end {% if transaction.transaction_type == 'income' %}text-success{% else %}text-danger{% endif %}">
-                                            {% if transaction.transaction_type == 'income' %}+{% else %}-{% endif %}${{ "%.2f"|format(transaction.amount) }}
+                                            <strong>{% if transaction.transaction_type == 'income' %}+{% else %}-{% endif %}{{ currency_symbol }}{{ "%.2f"|format(transaction.amount) }}</strong>
                                         </td>
                                     </tr>
                                     {% endfor %}

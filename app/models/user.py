@@ -89,6 +89,18 @@ class User(db.Model, UserMixin):
         cascade='all, delete-orphan'
     )
     
+    # One user has many projects
+    projects = db.relationship(
+        'Project',
+        backref='user',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
+    # Why projects relationship?
+    # - User can have multiple projects
+    # - Projects help organize transactions
+    # - cascade='all, delete-orphan': delete projects when user deleted
+    
     def __repr__(self):
         """
         String representation for debugging.

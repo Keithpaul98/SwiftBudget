@@ -13,3 +13,4 @@ Why Service Layer?
 from app.services.category_service import CategoryService
 from app.services.transaction_service import TransactionService
 from app.services.budget_service import BudgetService
+from app.services.project_service import ProjectService

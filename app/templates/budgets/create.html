@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Create Budget Goal</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('budgets.create') }}" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Category -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.category_id.label(class="form-label") }}
+                                {{ form.category_id(class="form-select" + (" is-invalid" if form.category_id.errors else "")) }}
+                                {% if form.category_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.category_id.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Choose which category to budget for</small>
+                            </div>
+                            
+                            <!-- Period -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.period.label(class="form-label") }}
+                                {{ form.period(class="form-select" + (" is-invalid" if form.period.errors else "")) }}
+                                {% if form.period.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.period.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">How often this budget resets</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Amount -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.amount.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">{{ currency_symbol }}</span>
+                                    {{ form.amount(class="form-control" + (" is-invalid" if form.amount.errors else "")) }}
+                                    {% if form.amount.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.amount.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Maximum spending limit</small>
+                            </div>
+                            
+                            <!-- Alert Threshold -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.alert_threshold.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.alert_threshold(class="form-control" + (" is-invalid" if form.alert_threshold.errors else "")) }}
+                                    <span class="input-group-text">%</span>
+                                    {% if form.alert_threshold.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.alert_threshold.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Alert when spending reaches this percentage</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Active Status -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_active(class="form-check-input") }}
+                                {{ form.is_active.label(class="form-check-label") }}
+                            </div>
+                            <small class="text-muted">Inactive budgets won't track spending or send alerts</small>
+                        </div>
+                        
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('budgets.index') }}" class="btn btn-secondary">Cancel</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

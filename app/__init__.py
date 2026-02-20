@@ -108,16 +108,26 @@ def create_app(config_name=None):
     # Register blueprints (routes)
     from app.routes.auth import auth_bp
     from app.routes.transactions import transactions_bp
+    from app.routes.budgets import budgets_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(transactions_bp)
+    app.register_blueprint(budgets_bp)
     
     # Register error handlers
     register_error_handlers(app)
     
+    # Add currency to template context
+    @app.context_processor
+    def inject_currency():
+        return {
+            'currency_symbol': app.config['CURRENCY_SYMBOL'],
+            'currency_code': app.config['CURRENCY_CODE']
+        }
+    
     # Import models (required for Flask-Migrate to detect them)
     # Why here? Models need app context and db to be initialized first
     with app.app_context():
-        from app.models import User, Category, Transaction, BudgetGoal
+        from app.models import User, Category, Transaction, BudgetGoal, Project
         
         # Note: db.create_all() disabled - using Flask-Migrate instead
         # Database schema is now managed by migrations (flask db upgrade)

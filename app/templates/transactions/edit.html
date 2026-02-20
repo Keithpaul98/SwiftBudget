@@ -28,7 +28,7 @@
                             <div class="col-md-6 mb-3">
                                 {{ form.amount.label(class="form-label") }}
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">{{ currency_symbol }}</span>
                                     {{ form.amount(class="form-control" + (" is-invalid" if form.amount.errors else "")) }}
                                     {% if form.amount.errors %}
                                         <div class="invalid-feedback">
@@ -57,7 +57,7 @@
                             <div class="col-md-6 mb-3">
                                 {{ form.unit_price.label(class="form-label") }}
                                 <div class="input-group">
-                                    <span class="input-group-text">$</span>
+                                    <span class="input-group-text">{{ currency_symbol }}</span>
                                     {{ form.unit_price(class="form-control" + (" is-invalid" if form.unit_price.errors else "")) }}
                                     {% if form.unit_price.errors %}
                                         <div class="invalid-feedback">
@@ -65,7 +65,7 @@
                                         </div>
                                     {% endif %}
                                 </div>
-                                <small class="text-muted">Price per item (e.g., $2.00 each)</small>
+                                <small class="text-muted">Price per item (e.g., {{ currency_symbol }}2.00 each)</small>
                             </div>
                         </div>
                         

@@ -116,22 +116,28 @@ class TransactionForm(FlaskForm):
     # - Defaults to today
     # - Prevents future dates (can add validator)
     
-    description = TextAreaField(
+    description = StringField(
         'Description',
-        validators=[
-            Optional(),
-            Length(max=200, message='Description must be less than 200 characters')
-        ],
+        validators=[Optional(), Length(max=200, message='Description must be 200 characters or less')],
         render_kw={
-            'placeholder': 'Optional notes about this transaction',
-            'class': 'form-control',
-            'rows': 3
+            'placeholder': 'Optional: Add a note about this transaction',
+            'class': 'form-control'
         }
     )
-    # Why Optional?
-    # - Description is not required
-    # - User can leave blank
-    # - Length limit prevents abuse
+    # Why optional?
+    # - Not all transactions need descriptions
+    # - Amount and category are often self-explanatory
+    
+    project_id = SelectField(
+        'Project',
+        validators=[Optional()],
+        coerce=lambda x: int(x) if x else None,
+        render_kw={'class': 'form-select'}
+    )
+    # Why project_id?
+    # - Optional: not all transactions belong to projects
+    # - Groups related transactions (e.g., "Parents Shopping")
+    # - Helps with reporting and organization
     
     submit = SubmitField(
         'Save Transaction',
