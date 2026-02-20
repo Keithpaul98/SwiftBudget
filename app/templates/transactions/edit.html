@@ -81,8 +81,22 @@
                                 {% endif %}
                             </div>
                             
-                            <!-- Date -->
+                            <!-- Project -->
                             <div class="col-md-6 mb-3">
+                                {{ form.project_id.label(class="form-label") }}
+                                {{ form.project_id(class="form-select" + (" is-invalid" if form.project_id.errors else "")) }}
+                                {% if form.project_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.project_id.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Optional: Group related transactions</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Transaction Date -->
+                            <div class="col-md-12 mb-3">
                                 {{ form.transaction_date.label(class="form-label") }}
                                 {{ form.transaction_date(class="form-control" + (" is-invalid" if form.transaction_date.errors else "")) }}
                                 {% if form.transaction_date.errors %}

@@ -216,6 +216,9 @@ def dashboard():
     from app.services.transaction_service import TransactionService
     from app.services.category_service import CategoryService
     from app.services.budget_service import BudgetService
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+    from app.models.transaction import Transaction
     
     # Get current month summary
     summary = TransactionService.get_spending_summary(current_user.id)
@@ -233,6 +236,29 @@ def dashboard():
     budget_statuses = BudgetService.get_all_budget_statuses(current_user.id)
     alert_budgets = BudgetService.get_budgets_needing_alerts(current_user.id)
     
+    # Get spending by category for pie chart
+    category_spending = db.session.query(
+        Category.name,
+        func.sum(Transaction.amount).label('total')
+    ).join(Transaction).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.transaction_type == 'expense',
+        Transaction.is_deleted == False
+    ).group_by(Category.name).all()
+    
+    # Get last 7 days spending trend
+    from sqlalchemy import case
+    seven_days_ago = datetime.now().date() - timedelta(days=6)
+    daily_spending = db.session.query(
+        Transaction.transaction_date,
+        func.sum(case((Transaction.transaction_type == 'expense', Transaction.amount), else_=0)).label('expenses'),
+        func.sum(case((Transaction.transaction_type == 'income', Transaction.amount), else_=0)).label('income')
+    ).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.transaction_date >= seven_days_ago,
+        Transaction.is_deleted == False
+    ).group_by(Transaction.transaction_date).order_by(Transaction.transaction_date).all()
+    
     return render_template(
         'dashboard/index.html',
         title='Dashboard',
@@ -240,5 +266,7 @@ def dashboard():
         recent_transactions=recent_transactions,
         categories=categories,
         budget_statuses=budget_statuses,
-        alert_budgets=alert_budgets
+        alert_budgets=alert_budgets,
+        category_spending=category_spending,
+        daily_spending=daily_spending
     )

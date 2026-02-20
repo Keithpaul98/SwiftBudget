@@ -109,9 +109,11 @@ def create_app(config_name=None):
     from app.routes.auth import auth_bp
     from app.routes.transactions import transactions_bp
     from app.routes.budgets import budgets_bp
+    from app.routes.projects import projects_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(transactions_bp)
     app.register_blueprint(budgets_bp)
+    app.register_blueprint(projects_bp)
     
     # Register error handlers
     register_error_handlers(app)

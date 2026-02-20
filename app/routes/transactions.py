@@ -101,6 +101,11 @@ def create():
     categories = CategoryService.get_user_categories(current_user.id)
     form.category_id.choices = [(c.id, c.name) for c in categories]
     
+    # Populate project choices
+    from app.services.project_service import ProjectService
+    projects = ProjectService.get_user_projects(current_user.id)
+    form.project_id.choices = [('', 'No Project')] + [(p.id, p.name) for p in projects]
+    
     if form.validate_on_submit():
         try:
             # Calculate amount if quantity and unit_price provided
@@ -122,10 +127,11 @@ def create():
                 description=form.description.data
             )
             
-            # Update quantity and unit_price if provided
-            if quantity or unit_price:
+            # Update quantity, unit_price, and project if provided
+            if quantity or unit_price or form.project_id.data:
                 transaction.quantity = int(quantity) if quantity else 1
                 transaction.unit_price = unit_price
+                transaction.project_id = form.project_id.data if form.project_id.data else None
                 db.session.commit()
             
             flash(f'{form.transaction_type.data.capitalize()} transaction created successfully!', 'success')
@@ -193,9 +199,10 @@ def edit(transaction_id):
                 description=form.description.data
             )
             
-            # Update quantity and unit_price
+            # Update quantity, unit_price, and project
             updated_transaction.quantity = int(quantity) if quantity else 1
             updated_transaction.unit_price = unit_price
+            updated_transaction.project_id = form.project_id.data if form.project_id.data else None
             db.session.commit()
             
             flash('Transaction updated successfully!', 'success')
@@ -208,6 +215,11 @@ def edit(transaction_id):
             flash('An error occurred while updating the transaction.', 'danger')
             print(f"Transaction update error: {e}")
     
+    # Populate project choices
+    from app.services.project_service import ProjectService
+    projects = ProjectService.get_user_projects(current_user.id)
+    form.project_id.choices = [('', 'No Project')] + [(p.id, p.name) for p in projects]
+    
     # Pre-populate form with existing data (GET request)
     if request.method == 'GET':
         form.amount.data = transaction.amount
@@ -217,6 +229,7 @@ def edit(transaction_id):
         form.transaction_type.data = transaction.transaction_type
         form.transaction_date.data = transaction.transaction_date
         form.description.data = transaction.description
+        form.project_id.data = transaction.project_id if transaction.project_id else ''
     
     return render_template(
         'transactions/edit.html',

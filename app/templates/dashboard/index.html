@@ -77,6 +77,33 @@
         </div>
     </div>
     
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <!-- Spending Trend Chart -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> 7-Day Spending Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="spendingTrendChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Category Breakdown Chart -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Spending by Category</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Budget Overview -->
     {% if budget_statuses %}
     <div class="row mb-4">
@@ -165,4 +192,116 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Spending Trend Chart (Line Chart)
+    const trendCtx = document.getElementById('spendingTrendChart').getContext('2d');
+    const trendChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: [
+                {% for day in daily_spending %}
+                '{{ day.transaction_date.strftime("%b %d") }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Expenses',
+                data: [
+                    {% for day in daily_spending %}
+                    {{ day.expenses or 0 }},
+                    {% endfor %}
+                ],
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                tension: 0.4,
+                fill: true
+            }, {
+                label: 'Income',
+                data: [
+                    {% for day in daily_spending %}
+                    {{ day.income or 0 }},
+                    {% endfor %}
+                ],
+                borderColor: '#27ae60',
+                backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': {{ currency_symbol }}' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '{{ currency_symbol }}' + value;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Category Breakdown Chart (Pie Chart)
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                {% for cat in category_spending %}
+                '{{ cat.name }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                data: [
+                    {% for cat in category_spending %}
+                    {{ cat.total }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    '#3498db', '#e74c3c', '#f39c12', '#27ae60', '#9b59b6',
+                    '#1abc9c', '#34495e', '#e67e22', '#95a5a6', '#d35400'
+                ],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return context.label + ': {{ currency_symbol }}' + context.parsed.toFixed(2) + ' (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
 {% endblock %}
