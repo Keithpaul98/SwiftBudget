@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Edit Transaction</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('transactions.edit', transaction_id=transaction.id) }}" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Transaction Type -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.transaction_type.label(class="form-label") }}
+                                {{ form.transaction_type(class="form-select" + (" is-invalid" if form.transaction_type.errors else "")) }}
+                                {% if form.transaction_type.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.transaction_type.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Amount -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.amount.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.amount(class="form-control" + (" is-invalid" if form.amount.errors else "")) }}
+                                    {% if form.amount.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.amount.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Or enter quantity and unit price below</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Quantity -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.quantity.label(class="form-label") }}
+                                {{ form.quantity(class="form-control" + (" is-invalid" if form.quantity.errors else "")) }}
+                                {% if form.quantity.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.quantity.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="text-muted">Number of items (e.g., 5 apples)</small>
+                            </div>
+                            
+                            <!-- Unit Price -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.unit_price.label(class="form-label") }}
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    {{ form.unit_price(class="form-control" + (" is-invalid" if form.unit_price.errors else "")) }}
+                                    {% if form.unit_price.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.unit_price.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Price per item (e.g., $2.00 each)</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Category -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.category_id.label(class="form-label") }}
+                                {{ form.category_id(class="form-select" + (" is-invalid" if form.category_id.errors else "")) }}
+                                {% if form.category_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.category_id.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Date -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.transaction_date.label(class="form-label") }}
+                                {{ form.transaction_date(class="form-control" + (" is-invalid" if form.transaction_date.errors else "")) }}
+                                {% if form.transaction_date.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.transaction_date.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else "")) }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('transactions.index') }}" class="btn btn-secondary">Cancel</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-calculate total amount from quantity and unit price
+    const quantityInput = document.getElementById('quantity');
+    const unitPriceInput = document.getElementById('unit_price');
+    const amountInput = document.getElementById('amount');
+    
+    function calculateTotal() {
+        const quantity = parseFloat(quantityInput.value) || 0;
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        
+        if (quantity > 0 && unitPrice > 0) {
+            const total = (quantity * unitPrice).toFixed(2);
+            amountInput.value = total;
+        }
+    }
+    
+    // Calculate on input change
+    quantityInput.addEventListener('input', calculateTotal);
+    unitPriceInput.addEventListener('input', calculateTotal);
+</script>
+{% endblock %}

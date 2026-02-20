@@ -107,13 +107,9 @@ def create_app(config_name=None):
     
     # Register blueprints (routes)
     from app.routes.auth import auth_bp
+    from app.routes.transactions import transactions_bp
     app.register_blueprint(auth_bp)
-    
-    # Future blueprints (Module 5+)
-    # from app.routes.dashboard import dashboard_bp
-    # from app.routes.transactions import transactions_bp
-    # app.register_blueprint(dashboard_bp)
-    # app.register_blueprint(transactions_bp)
+    app.register_blueprint(transactions_bp)
     
     # Register error handlers
     register_error_handlers(app)

@@ -203,24 +203,35 @@ def logout():
 @login_required
 def dashboard():
     """
-    User dashboard (placeholder for Module 5).
+    User dashboard with spending overview.
     
-    Why @login_required?
-    - Only authenticated users can access dashboard
-    - Redirects to login page if not authenticated
-    - Flask-Login handles redirect automatically
+    Shows:
+    - Current month spending summary
+    - Recent transactions
+    - Budget status (Module 6)
     
     Returns:
         Rendered dashboard template
     """
-    # This is a placeholder route
-    # Full dashboard will be implemented in Module 5
+    from app.services.transaction_service import TransactionService
+    from app.services.category_service import CategoryService
+    
+    # Get current month summary
+    summary = TransactionService.get_spending_summary(current_user.id)
+    
+    # Get recent transactions (last 10)
+    recent_transactions = TransactionService.get_user_transactions(
+        user_id=current_user.id,
+        limit=10
+    )
+    
+    # Get user categories
+    categories = CategoryService.get_user_categories(current_user.id)
+    
     return render_template(
         'dashboard/index.html',
         title='Dashboard',
-        user=current_user
+        summary=summary,
+        recent_transactions=recent_transactions,
+        categories=categories
     )
-    # Why pass user to template?
-    # - Display user-specific information
-    # - current_user is available in templates by default
-    # - Explicit is better than implicit (clarity)

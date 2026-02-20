@@ -33,16 +33,37 @@ class Transaction(db.Model):
     # Primary Key
     id = db.Column(db.Integer, primary_key=True)
     
-    # Transaction Details
+    # Transaction details
     amount = db.Column(
         db.Numeric(10, 2),  # 10 digits total, 2 after decimal
         nullable=False
     )
-    # Why Numeric(10,2)?
-    # - 10 digits total: supports up to $99,999,999.99
-    # - 2 decimal places: cents precision
-    # - Exact arithmetic: no floating-point errors
-    # - Example: 12345.67 is stored exactly as 12345.67
+    # Why Numeric(10, 2)?
+    # - Precise decimal arithmetic (no floating point errors)
+    # - 10 digits total, 2 after decimal point
+    # - Max value: 99,999,999.99 (sufficient for personal finance)
+    # - Example: 1234.56
+    
+    quantity = db.Column(
+        db.Integer,
+        nullable=True,
+        default=1
+    )
+    # Why quantity?
+    # - Track number of items purchased
+    # - Example: "5 apples" or "3 coffees"
+    # - Optional: defaults to 1 if not specified
+    # - Nullable: for backward compatibility
+    
+    unit_price = db.Column(
+        db.Numeric(10, 2),
+        nullable=True
+    )
+    # Why unit_price?
+    # - Track price per item
+    # - Example: "$2.00 per apple"
+    # - Optional: if specified, amount = quantity * unit_price
+    # - Nullable: for backward compatibility
     
     description = db.Column(
         db.String(200),
