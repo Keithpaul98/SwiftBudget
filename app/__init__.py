@@ -81,16 +81,37 @@ def create_app(config_name=None):
     # Why set login_view? Flask-Login needs to know where to redirect
     # unauthenticated users who try to access @login_required routes
     
+    # Flask-Login user loader
+    @login_manager.user_loader
+    def load_user(user_id):
+        """
+        Load user by ID for Flask-Login.
+        
+        Why user_loader?
+        - Flask-Login needs to reload user from session
+        - Called on every request for authenticated users
+        - Returns User object or None
+        
+        Args:
+            user_id (str): User ID from session
+        
+        Returns:
+            User: User object or None if not found
+        """
+        from app.models.user import User
+        return User.query.get(int(user_id))
+    
     # Configure logging (only in production/development, not testing)
     if not app.config['TESTING']:
         configure_logging(app)
     
     # Register blueprints (routes)
-    # Note: Blueprints will be created in future modules
-    # from app.routes.auth import auth_bp
+    from app.routes.auth import auth_bp
+    app.register_blueprint(auth_bp)
+    
+    # Future blueprints (Module 5+)
     # from app.routes.dashboard import dashboard_bp
     # from app.routes.transactions import transactions_bp
-    # app.register_blueprint(auth_bp)
     # app.register_blueprint(dashboard_bp)
     # app.register_blueprint(transactions_bp)
     

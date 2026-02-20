@@ -1,16 +1,16 @@
 """
 Routes package.
 
-Why use blueprints?
-- Modularity: Each feature (auth, transactions, dashboard) has its own blueprint
-- Organization: Routes grouped by functionality
-- Scalability: Easy to add new route modules
-- Reusability: Blueprints can be registered to multiple apps
-
-Blueprints will be created in Module 3 and beyond.
+Why separate routes into blueprints?
+- Organization: Each feature has its own blueprint
+- Scalability: Easy to add new features without cluttering a single file
+- URL Prefixes: Group related routes under a common prefix
+- Modularity: Blueprints can be registered/unregistered easily
 """
 
-# Blueprints will be imported here in future modules
-# from app.routes.auth import auth_bp
+# Import blueprints
+from app.routes.auth import auth_bp
+
+# Future blueprints (Module 5+)
 # from app.routes.dashboard import dashboard_bp
 # from app.routes.transactions import transactions_bp
