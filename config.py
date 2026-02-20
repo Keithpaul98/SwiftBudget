@@ -40,12 +40,17 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript access (XSS protection)
     SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
     
-    # Email Configuration (Flask-Mail)
+    # Email Configuration (Gmail SMTP)
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
     MAIL_PORT = int(os.getenv('MAIL_PORT', 587))
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
+    
+    # Google OAuth Configuration
+    GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+    GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+    GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
     MAIL_DEFAULT_SENDER = ('SwiftBudget', os.getenv('MAIL_USERNAME'))
     
     # Rate Limiting (Flask-Limiter)

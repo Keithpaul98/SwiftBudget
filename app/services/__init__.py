@@ -1,16 +1,15 @@
 """
 Services package.
 
-Why use a service layer?
-1. Business Logic Separation: Keep business logic out of routes
-2. Reusability: Services can be called from routes, CLI, background jobs
-3. Testability: Easy to unit test business logic in isolation
-4. Framework Independence: Services are pure Python (enables Flask → Django migration)
-
-Services will be created in Module 4.
+Why Service Layer?
+- Separation of Concerns: Business logic separate from routes
+- Reusability: Services can be used across multiple routes
+- Testability: Easy to unit test business logic
+- Maintainability: Easier to modify logic without touching routes
+- Framework Independence: Can switch frameworks without rewriting business logic
 """
 
-# Services will be imported here in Module 4
-# from app.services.user_service import UserService
-# from app.services.transaction_service import TransactionService
-# from app.services.budget_service import BudgetService
+# Import services
+from app.services.category_service import CategoryService
+from app.services.transaction_service import TransactionService
+from app.services.budget_service import BudgetService
