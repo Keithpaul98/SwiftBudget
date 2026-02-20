@@ -97,11 +97,14 @@ def create_app(config_name=None):
     # Register error handlers
     register_error_handlers(app)
     
-    # Create database tables (only in development)
-    # Why only development? Production uses migrations (flask db upgrade)
+    # Import models (required for Flask-Migrate to detect them)
+    # Why here? Models need app context and db to be initialized first
     with app.app_context():
-        if app.config['DEBUG']:
-            db.create_all()
+        from app.models import User, Category, Transaction, BudgetGoal
+        
+        # Note: db.create_all() disabled - using Flask-Migrate instead
+        # Database schema is now managed by migrations (flask db upgrade)
+        # This ensures consistent schema across dev/test/prod environments
     
     # Log startup message
     app.logger.info(f'SwiftBudget started in {config_name} mode')
