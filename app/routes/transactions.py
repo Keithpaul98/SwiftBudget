@@ -8,7 +8,7 @@ Why separate transactions blueprint?
 - Easy to add API endpoints later
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.models.transaction import Transaction
@@ -133,6 +133,35 @@ def create():
                 transaction.unit_price = unit_price
                 transaction.project_id = form.project_id.data if form.project_id.data else None
                 db.session.commit()
+            
+            # Check budget alerts for expenses
+            if form.transaction_type.data == 'expense':
+                try:
+                    from app.services.budget_service import BudgetService
+                    from app.services.email_service import EmailService
+                    
+                    # Get budget for this category
+                    budget_statuses = BudgetService.get_all_budget_statuses(current_user.id)
+                    current_app.logger.info(f'Checking {len(budget_statuses)} budgets for alerts')
+                    
+                    for status in budget_statuses:
+                        if status['category_id'] == form.category_id.data:
+                            current_app.logger.info(f'Found budget for category {status["category_name"]}: {status["percentage_used"]}% used')
+                            
+                            # Send alert if over threshold or exceeded
+                            if status['is_over_budget']:
+                                current_app.logger.info(f'Budget exceeded! Sending alert to {current_user.email}')
+                                result = EmailService.send_budget_exceeded_alert(current_user.email, status)
+                                current_app.logger.info(f'Email sent: {result}')
+                            elif status['should_alert']:
+                                current_app.logger.info(f'Budget threshold reached! Sending alert to {current_user.email}')
+                                result = EmailService.send_budget_alert(current_user.email, status)
+                                current_app.logger.info(f'Email sent: {result}')
+                            break
+                except Exception as e:
+                    current_app.logger.error(f'Failed to send budget alert: {e}')
+                    import traceback
+                    current_app.logger.error(traceback.format_exc())
             
             flash(f'{form.transaction_type.data.capitalize()} transaction created successfully!', 'success')
             return redirect(url_for('transactions.index'))

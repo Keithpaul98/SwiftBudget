@@ -91,6 +91,13 @@ def signup():
             # - User can start tracking immediately
             # - Common categories (Food, Rent, etc.) pre-populated
             
+            # Send welcome email
+            try:
+                from app.services.email_service import EmailService
+                EmailService.send_welcome_email(user.email, user.username)
+            except Exception as e:
+                current_app.logger.error(f'Failed to send welcome email: {e}')
+            
             flash('Account created successfully! Please log in.', 'success')
             return redirect(url_for('auth.login'))
             

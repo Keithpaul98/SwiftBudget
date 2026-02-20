@@ -101,6 +101,18 @@ class User(db.Model, UserMixin):
     # - Projects help organize transactions
     # - cascade='all, delete-orphan': delete projects when user deleted
     
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    # Why is_active?
+    # - Soft delete: Don't actually delete users
+    # - Can deactivate accounts instead
+    # - Preserves data integrity (transactions, categories remain)
+    
+    email_notifications = db.Column(db.Boolean, nullable=False, default=True)
+    # Why email_notifications?
+    # - Allow users to opt-in/opt-out of email alerts
+    # - Budget alerts, weekly summaries
+    # - Default: True (enabled)
+    
     def __repr__(self):
         """
         String representation for debugging.

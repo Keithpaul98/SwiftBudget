@@ -1,0 +1,19 @@
+Budget Alert: {{ budget.category_name }}
+
+Hello,
+
+Your spending for {{ budget.category_name }} has reached {{ "%.0f"|format(budget.percentage_used) }}% of your budget.
+
+Budget Details:
+- Category: {{ budget.category_name }}
+- Budget Amount: MK {{ "%.2f"|format(budget.budget_amount) }}
+- Current Spending: MK {{ "%.2f"|format(budget.current_spending) }}
+- Remaining: MK {{ "%.2f"|format(budget.remaining) }}
+- Period: {{ budget.period }}
+
+You've spent {{ "%.0f"|format(budget.percentage_used) }}% of your {{ budget.period }} budget for this category.
+
+Consider reviewing your spending to stay within budget.
+
+Best regards,
+SwiftBudget Team

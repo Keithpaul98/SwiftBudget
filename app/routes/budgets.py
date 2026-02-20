@@ -133,7 +133,9 @@ def edit(budget_id):
     form = BudgetGoalForm()
     
     # Category is fixed (can't change category of existing budget)
+    # Must set choices before validation
     form.category_id.choices = [(budget_goal.category_id, budget_goal.category.name)]
+    form.category_id.data = budget_goal.category_id
     
     if form.validate_on_submit():
         try:
@@ -156,6 +158,12 @@ def edit(budget_id):
             db.session.rollback()
             flash('An error occurred while updating the budget goal.', 'danger')
             print(f"Budget update error: {e}")
+    elif request.method == 'POST':
+        # Form validation failed
+        print(f"Form validation errors: {form.errors}")
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     
     # Pre-populate form with existing data (GET request)
     if request.method == 'GET':

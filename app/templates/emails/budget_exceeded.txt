@@ -1,0 +1,19 @@
+⚠️ Budget Exceeded: {{ budget.category_name }}
+
+Hello,
+
+ALERT: You have exceeded your budget for {{ budget.category_name }}!
+
+Budget Details:
+- Category: {{ budget.category_name }}
+- Budget Amount: MK {{ "%.2f"|format(budget.budget_amount) }}
+- Current Spending: MK {{ "%.2f"|format(budget.current_spending) }}
+- Over Budget By: MK {{ "%.2f"|format(budget.current_spending - budget.budget_amount) }}
+- Period: {{ budget.period }}
+
+You've spent {{ "%.0f"|format(budget.percentage_used) }}% of your {{ budget.period }} budget for this category.
+
+Please review your spending and consider adjusting your budget or reducing expenses.
+
+Best regards,
+SwiftBudget Team

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+        }
+        .welcome-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .features {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .feature-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-item:last-child {
+            border-bottom: none;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            margin-top: 30px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎉 Welcome to SwiftBudget!</h1>
+    </div>
+    <div class="content">
+        <div class="welcome-box">
+            <h2>Hello {{ username }}!</h2>
+            <p>Thank you for joining SwiftBudget - your personal finance manager!</p>
+        </div>
+        
+        <h3>Getting Started:</h3>
+        <div class="features">
+            <div class="feature-item">
+                <strong>1. Create Categories</strong><br>
+                Set up categories for your expenses (e.g., Food, Transport, Utilities)
+            </div>
+            <div class="feature-item">
+                <strong>2. Add Transactions</strong><br>
+                Track your income and expenses with detailed information
+            </div>
+            <div class="feature-item">
+                <strong>3. Set Budget Goals</strong><br>
+                Control your spending with monthly, weekly, or yearly budgets
+            </div>
+            <div class="feature-item">
+                <strong>4. Create Projects</strong><br>
+                Group related transactions for better organization
+            </div>
+            <div class="feature-item">
+                <strong>5. Monitor Dashboard</strong><br>
+                Visualize your financial health with interactive charts
+            </div>
+        </div>
+        
+        <h3>Key Features:</h3>
+        <div class="features">
+            <div class="feature-item">✅ Track income and expenses</div>
+            <div class="feature-item">✅ Set budget goals with alerts</div>
+            <div class="feature-item">✅ Interactive spending charts</div>
+            <div class="feature-item">✅ Project-based organization</div>
+            <div class="feature-item">✅ Malawi Kwacha (MK) currency support</div>
+        </div>
+        
+        <div style="text-align: center;">
+            <p><strong>We're here to help you take control of your finances!</strong></p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>SwiftBudget - Your Personal Finance Manager</p>
+    </div>
+</body>
+</html>

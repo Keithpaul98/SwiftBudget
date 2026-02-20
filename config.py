@@ -55,7 +55,9 @@ class Config:
     # Currency Configuration
     CURRENCY_SYMBOL = os.getenv('CURRENCY_SYMBOL', 'MK')
     CURRENCY_CODE = os.getenv('CURRENCY_CODE', 'MWK')  # Malawi Kwacha
-    MAIL_DEFAULT_SENDER = ('SwiftBudget', os.getenv('MAIL_USERNAME'))
+    
+    # Email sender configuration
+    MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME'))
     
     # Rate Limiting (Flask-Limiter)
     RATELIMIT_STORAGE_URL = 'memory://'  # Use Redis in production for distributed systems

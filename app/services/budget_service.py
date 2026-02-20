@@ -260,6 +260,7 @@ class BudgetService:
             'alert_threshold': budget_goal.alert_threshold,
             'period': budget_goal.period,
             'category_name': budget_goal.category.name,
+            'category_id': budget_goal.category_id,
             'is_active': budget_goal.is_active
         }
     

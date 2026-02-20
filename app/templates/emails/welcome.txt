@@ -1,0 +1,25 @@
+Welcome to SwiftBudget!
+
+Hello {{ username }},
+
+Thank you for joining SwiftBudget - your personal finance manager!
+
+Getting Started:
+1. Create categories for your expenses (e.g., Food, Transport, Utilities)
+2. Add your transactions to track income and expenses
+3. Set budget goals to control your spending
+4. Create projects to group related transactions
+5. Monitor your financial health on the dashboard
+
+Features:
+- Track income and expenses with detailed categorization
+- Set monthly, weekly, or yearly budget goals
+- Receive alerts when approaching budget limits
+- Visualize spending with interactive charts
+- Group transactions into projects
+- All amounts in Malawi Kwacha (MK)
+
+We're here to help you take control of your finances!
+
+Best regards,
+SwiftBudget Team
