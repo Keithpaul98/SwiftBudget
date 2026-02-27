@@ -24,7 +24,18 @@ class Config:
     """
     
     # Flask Core Settings
-    SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+    # SECURITY: SECRET_KEY must be set in environment variables
+    # Generate with: python -c "import secrets; print(secrets.token_hex(32))"
+    SECRET_KEY = os.getenv('SECRET_KEY')
+    if not SECRET_KEY:
+        # Allow weak key only in development/testing
+        import sys
+        if 'pytest' not in sys.modules and os.getenv('FLASK_ENV') == 'production':
+            raise RuntimeError(
+                "SECRET_KEY environment variable must be set in production. "
+                "Generate one with: python -c 'import secrets; print(secrets.token_hex(32))'"
+            )
+        SECRET_KEY = 'dev-secret-key-ONLY-for-development'
     
     # Database Configuration
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://localhost/swiftbudget_dev')
@@ -36,9 +47,10 @@ class Config:
     # - SQLAlchemy's own event system still works
     
     # Session Configuration
-    PERMANENT_SESSION_LIFETIME = timedelta(hours=24)  # Sessions expire after 24 hours
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=2)  # Sessions expire after 2 hours (security)
     SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript access (XSS protection)
     SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
+    SESSION_REFRESH_EACH_REQUEST = True  # Refresh session on activity
     
     # Email Configuration (Gmail SMTP)
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
@@ -130,20 +142,20 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # Database Connection Pooling (CRITICAL for free tier - see DDD section 10.3)
-    # Why NullPool? Supabase free tier has 60 connection limit
-    # NullPool opens/closes connections per request, preventing exhaustion
-    from sqlalchemy.pool import NullPool
+    # Database Connection Pooling - Optimized for production
+    # Using small pool size for better performance while managing connections
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'poolclass': NullPool,  # No persistent connections
+        'pool_size': 5,  # 5 persistent connections
+        'max_overflow': 10,  # Allow 10 additional connections under load
+        'pool_timeout': 30,  # Wait 30s for connection
+        'pool_recycle': 1800,  # Recycle connections every 30 min
         'pool_pre_ping': True,  # Verify connection before use
     }
     
-    # Alternative: Small pool size (if you prefer persistent connections)
+    # Alternative for very limited connection tiers (e.g., Supabase free tier):
+    # from sqlalchemy.pool import NullPool
     # SQLALCHEMY_ENGINE_OPTIONS = {
-    #     'pool_size': 5,
-    #     'max_overflow': 10,
-    #     'pool_recycle': 3600,
+    #     'poolclass': NullPool,
     #     'pool_pre_ping': True,
     # }
     

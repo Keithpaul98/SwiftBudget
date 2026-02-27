@@ -12,6 +12,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, DecimalField, SelectField, DateField, TextAreaField, SubmitField
 from wtforms.validators import DataRequired, NumberRange, Length, Optional
 from datetime import date
+from app.validators import DecimalRange, SafeString
 
 
 class TransactionForm(FlaskForm):
@@ -30,30 +31,34 @@ class TransactionForm(FlaskForm):
         'Total Amount',
         validators=[
             DataRequired(message='Amount is required'),
-            NumberRange(min=0.01, message='Amount must be greater than 0')
+            DecimalRange(min=0.01, max=9999999.99, precision=2)
         ],
         render_kw={
             'placeholder': '0.00',
             'class': 'form-control',
             'step': '0.01',
             'min': '0.01',
+            'max': '9999999.99',
             'id': 'amount'
         }
     )
-    # Why DecimalField?
+    # Why DecimalField with DecimalRange?
     # - Precise decimal arithmetic (no floating point errors)
     # - Financial data requires exact values
     # - Database stores as NUMERIC(10,2)
+    # - Max 9,999,999.99 prevents overflow attacks
+    # - Precision=2 ensures only 2 decimal places
     
     quantity = DecimalField(
         'Quantity',
-        validators=[Optional(), NumberRange(min=1, message='Quantity must be at least 1')],
+        validators=[Optional(), DecimalRange(min=1, max=999999, precision=0)],
         default=1,
         render_kw={
             'placeholder': '1',
             'class': 'form-control',
             'step': '1',
             'min': '1',
+            'max': '999999',
             'id': 'quantity'
         }
     )
@@ -64,12 +69,13 @@ class TransactionForm(FlaskForm):
     
     unit_price = DecimalField(
         'Unit Price',
-        validators=[Optional(), NumberRange(min=0.01, message='Unit price must be greater than 0')],
+        validators=[Optional(), DecimalRange(min=0.01, max=9999999.99, precision=2)],
         render_kw={
             'placeholder': '0.00',
             'class': 'form-control',
             'step': '0.01',
             'min': '0.01',
+            'max': '9999999.99',
             'id': 'unit_price'
         }
     )
@@ -118,7 +124,7 @@ class TransactionForm(FlaskForm):
     
     description = StringField(
         'Description',
-        validators=[Optional(), Length(max=200, message='Description must be 200 characters or less')],
+        validators=[Optional(), Length(max=200, message='Description must be 200 characters or less'), SafeString()],
         render_kw={
             'placeholder': 'Optional: Add a note about this transaction',
             'class': 'form-control'

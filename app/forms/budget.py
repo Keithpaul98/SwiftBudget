@@ -11,6 +11,7 @@ Why separate budget forms?
 from flask_wtf import FlaskForm
 from wtforms import DecimalField, SelectField, IntegerField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, NumberRange, Optional
+from app.validators import DecimalRange
 
 
 class BudgetGoalForm(FlaskForm):
@@ -40,19 +41,22 @@ class BudgetGoalForm(FlaskForm):
         'Budget Amount',
         validators=[
             DataRequired(message='Budget amount is required'),
-            NumberRange(min=0.01, message='Budget amount must be greater than 0')
+            DecimalRange(min=0.01, max=9999999.99, precision=2)
         ],
         render_kw={
             'placeholder': '0.00',
             'class': 'form-control',
             'step': '0.01',
-            'min': '0.01'
+            'min': '0.01',
+            'max': '9999999.99'
         }
     )
-    # Why DecimalField?
+    # Why DecimalField with DecimalRange?
     # - Precise decimal arithmetic
     # - Financial data requires exact values
     # - Database stores as NUMERIC(10,2)
+    # - Max 9,999,999.99 prevents overflow attacks
+    # - Precision=2 ensures only 2 decimal places
     
     period = SelectField(
         'Budget Period',

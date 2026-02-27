@@ -14,9 +14,10 @@ Security Considerations:
 - Flash messages for user feedback
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
-from app import db
+from datetime import datetime, timedelta
+from app import db, limiter
 from app.models.user import User
 from app.models.category import Category
 from app.forms.auth import SignupForm, LoginForm
@@ -34,6 +35,8 @@ auth_bp = Blueprint(
 
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")  # Prevent signup spam
+@limiter.limit("20 per hour")
 def signup():
     """
     User registration route.
@@ -112,6 +115,8 @@ def signup():
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")  # Prevent brute force attacks
+@limiter.limit("20 per hour")
 def login():
     """
     User login route.
@@ -138,12 +143,24 @@ def login():
         # Find user by email (case-insensitive)
         user = User.query.filter_by(email=form.email.data.lower()).first()
         
+        # Check if account is locked
+        if user and user.locked_until:
+            if user.locked_until > datetime.utcnow():
+                remaining_minutes = int((user.locked_until - datetime.utcnow()).total_seconds() / 60)
+                flash(f'Account temporarily locked due to multiple failed login attempts. Please try again in {remaining_minutes} minutes.', 'danger')
+                return render_template('auth/login.html', form=form, title='Log In')
+            else:
+                # Lock period expired, reset
+                user.locked_until = None
+                user.failed_login_attempts = 0
+                db.session.commit()
+        
         # Verify user exists and password is correct
         if user and user.check_password(form.password.data):
-            # Why check both user and password?
-            # - user is None if email not found
-            # - check_password() returns False if password wrong
-            # - Both conditions must be True to log in
+            # Successful login - reset failed attempts
+            user.failed_login_attempts = 0
+            user.locked_until = None
+            db.session.commit()
             
             login_user(user)
             # What does login_user() do?
@@ -171,8 +188,29 @@ def login():
             return redirect(url_for('auth.dashboard'))
         
         else:
-            # Generic error message (security)
-            flash('Invalid email or password. Please try again.', 'danger')
+            # Failed login - increment failed attempts
+            if user:
+                user.failed_login_attempts += 1
+                
+                # Lock account after 5 failed attempts
+                if user.failed_login_attempts >= 5:
+                    user.locked_until = datetime.utcnow() + timedelta(minutes=15)
+                    db.session.commit()
+                    flash('Too many failed login attempts. Your account has been locked for 15 minutes.', 'danger')
+                    
+                    # TODO: Send email notification about account lockout
+                    try:
+                        from app.services.email_service import EmailService
+                        # EmailService.send_account_lockout_email(user.email, user.username)
+                    except Exception as e:
+                        current_app.logger.error(f'Failed to send lockout email: {e}')
+                else:
+                    db.session.commit()
+                    remaining_attempts = 5 - user.failed_login_attempts
+                    flash(f'Invalid email or password. {remaining_attempts} attempts remaining.', 'danger')
+            else:
+                # Generic error message (security - don't reveal if email exists)
+                flash('Invalid email or password. Please try again.', 'danger')
             # Why generic message?
             # - Prevents user enumeration attack
             # - Attacker can't determine if email exists

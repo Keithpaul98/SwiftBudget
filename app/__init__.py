@@ -118,6 +118,17 @@ def create_app(config_name=None):
     # Register error handlers
     register_error_handlers(app)
     
+    # Add security headers
+    @app.after_request
+    def set_security_headers(response):
+        """Add security headers to all responses."""
+        response.headers['X-Frame-Options'] = 'DENY'  # Prevent clickjacking
+        response.headers['X-Content-Type-Options'] = 'nosniff'  # Prevent MIME sniffing
+        response.headers['X-XSS-Protection'] = '1; mode=block'  # XSS protection
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+        return response
+    
     # Add currency to template context
     @app.context_processor
     def inject_currency():

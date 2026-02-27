@@ -15,7 +15,7 @@ Why separate validators?
 
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError
+from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp
 from app.models.user import User
 
 
@@ -66,14 +66,19 @@ class SignupForm(FlaskForm):
         'Password',
         validators=[
             DataRequired(message='Password is required'),
-            Length(min=8, message='Password must be at least 8 characters long')
+            Length(min=12, max=128, message='Password must be between 12 and 128 characters'),
+            Regexp(
+                r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]',
+                message='Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)'
+            )
         ],
-        render_kw={'placeholder': 'Create a strong password', 'class': 'form-control'}
+        render_kw={'placeholder': 'Min 12 chars with uppercase, lowercase, number & symbol', 'class': 'form-control'}
     )
-    # Why minimum 8 characters?
-    # - Security best practice
-    # - Harder to brute force
-    # - OWASP recommendation
+    # Why minimum 12 characters with complexity?
+    # - NIST and OWASP 2024 recommendations
+    # - Significantly harder to brute force
+    # - Protects against common password attacks
+    # - Complexity ensures stronger entropy
     
     confirm_password = PasswordField(
         'Confirm Password',

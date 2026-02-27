@@ -113,6 +113,14 @@ class User(db.Model, UserMixin):
     # - Budget alerts, weekly summaries
     # - Default: True (enabled)
     
+    # Account Security
+    failed_login_attempts = db.Column(db.Integer, nullable=False, default=0)
+    locked_until = db.Column(db.DateTime, nullable=True)
+    # Why track failed login attempts?
+    # - Prevent brute force attacks
+    # - Temporarily lock accounts after 5 failed attempts
+    # - Security best practice
+    
     def __repr__(self):
         """
         String representation for debugging.
