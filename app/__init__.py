@@ -154,7 +154,7 @@ def create_app(config_name=None):
                 'style-src': ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net", "fonts.googleapis.com"],
                 'img-src': ["'self'", "data:", "res.cloudinary.com"],
                 'font-src': ["'self'", "cdn.jsdelivr.net", "fonts.gstatic.com"],
-                'connect-src': ["'self'"],
+                'connect-src': ["'self'", "cdn.jsdelivr.net"],
             }
         )
     else:
