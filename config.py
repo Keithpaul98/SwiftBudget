@@ -126,6 +126,9 @@ class TestingConfig(Config):
     
     # Faster password hashing in tests (bcrypt cost factor 4 instead of 12)
     BCRYPT_LOG_ROUNDS = 4
+    
+    # Disable rate limiting in tests (allows unlimited requests)
+    RATELIMIT_ENABLED = False
 
 
 class ProductionConfig(Config):
