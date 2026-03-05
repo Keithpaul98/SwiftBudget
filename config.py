@@ -48,6 +48,11 @@ class Config:
     
     # Session Configuration
     PERMANENT_SESSION_LIFETIME = timedelta(hours=2)  # Sessions expire after 2 hours (security)
+    
+    # Bcrypt Configuration
+    # Lower rounds for production free tier (512MB RAM limit)
+    # Default is 12, using 10 for better performance on limited resources
+    BCRYPT_LOG_ROUNDS = 10
     SESSION_COOKIE_HTTPONLY = True  # Prevents JavaScript access (XSS protection)
     SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF protection
     SESSION_REFRESH_EACH_REQUEST = True  # Refresh session on activity
