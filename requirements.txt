@@ -10,7 +10,7 @@ Flask-Limiter==3.5.0
 Flask-Mail==0.9.1
 
 # Database
-psycopg[binary]==3.2.3  # PostgreSQL adapter
+psycopg[binary]==3.3.3  # PostgreSQL adapter
 
 # Input Sanitization
 bleach==6.3.0
