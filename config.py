@@ -71,6 +71,11 @@ class Config:
     # Email sender configuration
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME'))
     
+    # Cloudinary Configuration (image CDN)
+    CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME')
+    CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY')
+    CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET')
+    
     # Rate Limiting (Flask-Limiter)
     RATELIMIT_STORAGE_URL = 'memory://'  # Use Redis in production for distributed systems
     

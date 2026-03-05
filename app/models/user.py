@@ -101,6 +101,12 @@ class User(db.Model, UserMixin):
     # - Projects help organize transactions
     # - cascade='all, delete-orphan': delete projects when user deleted
     
+    profile_image = db.Column(
+        db.String(255),
+        nullable=True,
+        default=None
+    )
+    
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     # Why is_active?
     # - Soft delete: Don't actually delete users

@@ -104,7 +104,11 @@ class TestXSSProtection:
             
             # If user was created, verify XSS is not executed on display
             response = client.get('/auth/login')
-            assert b'<script>' not in response.data
+            # Check that user-injected script payloads are not present
+            # Note: Legitimate scripts (CDN, password toggle) are expected
+            assert b"<script>alert" not in response.data
+            assert b"onerror=alert" not in response.data
+            assert b"onload=alert" not in response.data
     
     def test_xss_in_project_name(self, client, auth, test_user):
         """Test that XSS scripts in project names are sanitized."""
@@ -221,7 +225,9 @@ class TestXSSProtection:
         }, follow_redirects=True)
         
         # Flash message should not execute script
-        assert b'<script>' not in response.data
+        # Note: Legitimate scripts (CDN, password toggle) are expected on the page
+        assert b"<script>alert" not in response.data
+        assert b"<script>document" not in response.data
     
     def test_xss_in_error_messages(self, client, auth, test_user, test_category):
         """Test that error messages don't execute XSS."""

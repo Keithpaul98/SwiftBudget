@@ -14,8 +14,9 @@ Why separate validators?
 """
 
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp
+from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp, Optional
 from app.models.user import User
 
 
@@ -188,3 +189,72 @@ class LoginForm(FlaskForm):
     # Why? We don't want to reveal if email exists (security)
     # Invalid credentials are handled in the route, not the form
     # This prevents user enumeration attacks
+
+
+class ProfileForm(FlaskForm):
+    """
+    Profile editing form.
+    
+    Fields:
+    - username: Update display name
+    - email: Update email address
+    - profile_image: Upload a profile picture
+    - current_password: Required to confirm changes
+    - new_password: Optional new password
+    - confirm_new_password: Must match new_password
+    """
+    
+    username = StringField(
+        'Username',
+        validators=[
+            DataRequired(message='Username is required'),
+            Length(min=3, max=80, message='Username must be between 3 and 80 characters')
+        ],
+        render_kw={'placeholder': 'Your username', 'class': 'form-control'}
+    )
+    
+    email = StringField(
+        'Email',
+        validators=[
+            DataRequired(message='Email is required'),
+            Email(message='Please enter a valid email address')
+        ],
+        render_kw={'placeholder': 'your.email@example.com', 'class': 'form-control', 'type': 'email'}
+    )
+    
+    profile_image = FileField(
+        'Profile Picture',
+        validators=[
+            FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'webp'], 'Images only (jpg, png, gif, webp)')
+        ]
+    )
+    
+    current_password = PasswordField(
+        'Current Password',
+        validators=[
+            Optional()
+        ],
+        render_kw={'placeholder': 'Required to change password', 'class': 'form-control'}
+    )
+    
+    new_password = PasswordField(
+        'New Password',
+        validators=[
+            Optional(),
+            Length(min=12, max=128, message='Password must be between 12 and 128 characters')
+        ],
+        render_kw={'placeholder': 'Min 12 chars (leave blank to keep current)', 'class': 'form-control'}
+    )
+    
+    confirm_new_password = PasswordField(
+        'Confirm New Password',
+        validators=[
+            EqualTo('new_password', message='Passwords must match')
+        ],
+        render_kw={'placeholder': 'Re-enter new password', 'class': 'form-control'}
+    )
+    
+    submit = SubmitField(
+        'Save Changes',
+        render_kw={'class': 'btn btn-primary'}
+    )

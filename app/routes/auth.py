@@ -20,9 +20,12 @@ from datetime import datetime, timedelta
 from app import db, limiter
 from app.models.user import User
 from app.models.category import Category
-from app.forms.auth import SignupForm, LoginForm
+from app.forms.auth import SignupForm, LoginForm, ProfileForm
 from app.utils.audit import audit_log
+from werkzeug.utils import secure_filename
 import bleach
+import os
+import uuid
 
 # Create blueprint
 auth_bp = Blueprint(
@@ -260,60 +263,204 @@ def dashboard():
     """
     User dashboard with spending overview.
     
-    Shows:
-    - Current month spending summary
-    - Recent transactions
-    - Budget status (Module 6)
+    Query Parameters:
+        range: Time range – '30d' (default), '90d', '6mo', '1yr'
     
-    Returns:
-        Rendered dashboard template
+    Shows:
+    - Spending summary for selected range
+    - Trend chart (bar + line) aggregated by day/week/month
+    - Category breakdown doughnut
+    - Budget progress bars
+    - Recent transactions
     """
     from app.services.transaction_service import TransactionService
     from app.services.category_service import CategoryService
     from app.services.budget_service import BudgetService
     from datetime import datetime, timedelta
-    from sqlalchemy import func
+    from sqlalchemy import func, case, extract
     from sqlalchemy.orm import joinedload
     from app.models.transaction import Transaction
     
-    # Get current month summary
-    summary = TransactionService.get_spending_summary(current_user.id)
+    # ── Determine time range ──
+    RANGE_OPTIONS = {
+        '30d':  {'days': 30,  'label': 'Last 30 Days',   'agg': 'daily'},
+        '90d':  {'days': 90,  'label': 'Last 90 Days',   'agg': 'weekly'},
+        '6mo':  {'days': 182, 'label': 'Last 6 Months',  'agg': 'monthly'},
+        '1yr':  {'days': 365, 'label': 'Last 12 Months', 'agg': 'monthly'},
+    }
+    selected_range = request.args.get('range', '30d')
+    if selected_range not in RANGE_OPTIONS:
+        selected_range = '30d'
     
-    # Get recent transactions (last 10)
+    range_cfg = RANGE_OPTIONS[selected_range]
+    today = datetime.now().date()
+    range_start = today - timedelta(days=range_cfg['days'])
+    
+    # ── Summary for selected range ──
+    summary = TransactionService.get_spending_summary(
+        current_user.id,
+        start_date=range_start,
+        end_date=today
+    )
+    
+    # ── Yesterday comparison ──
+    yesterday = today - timedelta(days=1)
+    yesterday_expenses = db.session.query(
+        func.coalesce(func.sum(Transaction.amount), 0)
+    ).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.transaction_type == 'expense',
+        Transaction.is_deleted == False,
+        Transaction.transaction_date == yesterday
+    ).scalar()
+    today_expenses = db.session.query(
+        func.coalesce(func.sum(Transaction.amount), 0)
+    ).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.transaction_type == 'expense',
+        Transaction.is_deleted == False,
+        Transaction.transaction_date == today
+    ).scalar()
+    expense_diff_yesterday = float(today_expenses) - float(yesterday_expenses)
+    
+    # ── Projected monthly expense ──
+    import calendar
+    days_in_month = calendar.monthrange(today.year, today.month)[1]
+    day_of_month = today.day
+    month_start = today.replace(day=1)
+    month_expenses_so_far = db.session.query(
+        func.coalesce(func.sum(Transaction.amount), 0)
+    ).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.transaction_type == 'expense',
+        Transaction.is_deleted == False,
+        Transaction.transaction_date >= month_start,
+        Transaction.transaction_date <= today
+    ).scalar()
+    month_expenses_so_far = float(month_expenses_so_far)
+    projected_monthly_expense = (month_expenses_so_far / max(day_of_month, 1)) * days_in_month
+    
+    # ── Savings rate ──
+    savings_rate = 0.0
+    if summary['total_income'] > 0:
+        savings_rate = ((summary['total_income'] - summary['total_expenses']) / summary['total_income']) * 100
+    
+    # ── Budget pacer: % through current month ──
+    month_progress_pct = (day_of_month / days_in_month) * 100
+    
+    # ── Recent transactions (last 10) ──
     recent_transactions = TransactionService.get_user_transactions(
         user_id=current_user.id,
         limit=10
     )
     
-    # Get user categories
+    # ── Categories ──
     categories = CategoryService.get_user_categories(current_user.id)
     
-    # Get budget statuses
+    # ── Budget statuses ──
     budget_statuses = BudgetService.get_all_budget_statuses(current_user.id)
     alert_budgets = BudgetService.get_budgets_needing_alerts(current_user.id)
     
-    # Get spending by category for pie chart
-    category_spending = db.session.query(
+    # ── Category spending for doughnut (group <5% into Miscellaneous) ──
+    raw_category_spending = db.session.query(
         Category.name,
         func.sum(Transaction.amount).label('total')
     ).join(Transaction).filter(
         Transaction.user_id == current_user.id,
         Transaction.transaction_type == 'expense',
-        Transaction.is_deleted == False
+        Transaction.is_deleted == False,
+        Transaction.transaction_date >= range_start
     ).group_by(Category.name).all()
     
-    # Get last 7 days spending trend
-    from sqlalchemy import case
-    seven_days_ago = datetime.now().date() - timedelta(days=6)
-    daily_spending = db.session.query(
-        Transaction.transaction_date,
-        func.sum(case((Transaction.transaction_type == 'expense', Transaction.amount), else_=0)).label('expenses'),
-        func.sum(case((Transaction.transaction_type == 'income', Transaction.amount), else_=0)).label('income')
-    ).filter(
-        Transaction.user_id == current_user.id,
-        Transaction.transaction_date >= seven_days_ago,
-        Transaction.is_deleted == False
-    ).group_by(Transaction.transaction_date).order_by(Transaction.transaction_date).all()
+    total_cat_spending = sum(float(c.total) for c in raw_category_spending) or 1
+    category_spending_names = []
+    category_spending_values = []
+    misc_total = 0.0
+    for cat in raw_category_spending:
+        pct = (float(cat.total) / total_cat_spending) * 100
+        if pct < 5:
+            misc_total += float(cat.total)
+        else:
+            category_spending_names.append(cat.name)
+            category_spending_values.append(float(cat.total))
+    if misc_total > 0:
+        category_spending_names.append('Miscellaneous')
+        category_spending_values.append(misc_total)
+    
+    # ── Trend data (aggregated differently per range) ──
+    agg_mode = range_cfg['agg']
+    
+    if agg_mode == 'daily':
+        # Build contiguous daily labels for smooth area chart
+        all_days = []
+        d = range_start
+        while d <= today:
+            all_days.append(d)
+            d += timedelta(days=1)
+        
+        trend_data = db.session.query(
+            Transaction.transaction_date.label('period'),
+            func.sum(case((Transaction.transaction_type == 'expense', Transaction.amount), else_=0)).label('expenses'),
+            func.sum(case((Transaction.transaction_type == 'income', Transaction.amount), else_=0)).label('income')
+        ).filter(
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_date >= range_start,
+            Transaction.is_deleted == False
+        ).group_by(Transaction.transaction_date).order_by(Transaction.transaction_date).all()
+        
+        data_map = {r.period: r for r in trend_data}
+        trend_labels = [d.strftime('%b %d') for d in all_days]
+        trend_expenses = [float(data_map[d].expenses) if d in data_map else 0 for d in all_days]
+        trend_income = [float(data_map[d].income) if d in data_map else 0 for d in all_days]
+        # Index of today in the array for the "Today" pacer line
+        today_index = len(all_days) - 1
+        
+    elif agg_mode == 'weekly':
+        trend_data = db.session.query(
+            extract('isoyear', Transaction.transaction_date).label('yr'),
+            extract('week', Transaction.transaction_date).label('wk'),
+            func.min(Transaction.transaction_date).label('week_start'),
+            func.sum(case((Transaction.transaction_type == 'expense', Transaction.amount), else_=0)).label('expenses'),
+            func.sum(case((Transaction.transaction_type == 'income', Transaction.amount), else_=0)).label('income')
+        ).filter(
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_date >= range_start,
+            Transaction.is_deleted == False
+        ).group_by('yr', 'wk').order_by('yr', 'wk').all()
+        
+        trend_labels = [f"Wk {r.week_start.strftime('%b %d')}" for r in trend_data]
+        trend_expenses = [float(r.expenses or 0) for r in trend_data]
+        trend_income = [float(r.income or 0) for r in trend_data]
+        today_index = len(trend_labels) - 1
+        
+    else:  # monthly
+        trend_data = db.session.query(
+            extract('year', Transaction.transaction_date).label('yr'),
+            extract('month', Transaction.transaction_date).label('mo'),
+            func.sum(case((Transaction.transaction_type == 'expense', Transaction.amount), else_=0)).label('expenses'),
+            func.sum(case((Transaction.transaction_type == 'income', Transaction.amount), else_=0)).label('income')
+        ).filter(
+            Transaction.user_id == current_user.id,
+            Transaction.transaction_date >= range_start,
+            Transaction.is_deleted == False
+        ).group_by('yr', 'mo').order_by('yr', 'mo').all()
+        
+        trend_labels = [f"{calendar.month_abbr[int(r.mo)]} {int(r.yr)}" for r in trend_data]
+        trend_expenses = [float(r.expenses or 0) for r in trend_data]
+        trend_income = [float(r.income or 0) for r in trend_data]
+        today_index = len(trend_labels) - 1
+    
+    # ── Projected expense line (extend trend_expenses with projection) ──
+    if trend_expenses and day_of_month > 0:
+        daily_avg = month_expenses_so_far / day_of_month
+        projected_expenses = list(trend_expenses)  # copy actual
+        # Fill remaining days with projected values (only for daily view)
+        if agg_mode == 'daily':
+            remaining = days_in_month - day_of_month
+            for i in range(remaining):
+                projected_expenses.append(daily_avg)
+    else:
+        projected_expenses = trend_expenses[:]
     
     return render_template(
         'dashboard/index.html',
@@ -323,6 +470,143 @@ def dashboard():
         categories=categories,
         budget_statuses=budget_statuses,
         alert_budgets=alert_budgets,
-        category_spending=category_spending,
-        daily_spending=daily_spending
+        category_spending_names=category_spending_names,
+        category_spending_values=category_spending_values,
+        total_expenses_for_donut=summary['total_expenses'],
+        trend_labels=trend_labels,
+        trend_expenses=trend_expenses,
+        trend_income=trend_income,
+        today_index=today_index,
+        projected_monthly_expense=projected_monthly_expense,
+        month_expenses_so_far=month_expenses_so_far,
+        expense_diff_yesterday=expense_diff_yesterday,
+        savings_rate=savings_rate,
+        month_progress_pct=month_progress_pct,
+        days_in_month=days_in_month,
+        day_of_month=day_of_month,
+        daily_avg_expense=month_expenses_so_far / max(day_of_month, 1),
+        selected_range=selected_range,
+        range_options=RANGE_OPTIONS
     )
+
+
+@auth_bp.route('/help')
+@login_required
+def help_guide():
+    """User guide and help page."""
+    return render_template('help/index.html', title='Help & Guide')
+
+
+@auth_bp.route('/profile')
+@login_required
+def profile():
+    """View user profile."""
+    return render_template('profile/index.html', title='My Profile')
+
+
+@auth_bp.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    """Edit user profile (username, email, password, profile image)."""
+    form = ProfileForm(obj=current_user)
+    
+    if form.validate_on_submit():
+        # Check if username is taken by another user
+        if form.username.data != current_user.username:
+            existing = User.query.filter_by(username=form.username.data).first()
+            if existing:
+                flash('Username already taken.', 'danger')
+                return render_template('profile/edit.html', form=form, title='Edit Profile')
+        
+        # Check if email is taken by another user
+        if form.email.data != current_user.email:
+            existing = User.query.filter_by(email=form.email.data).first()
+            if existing:
+                flash('Email already registered to another account.', 'danger')
+                return render_template('profile/edit.html', form=form, title='Edit Profile')
+        
+        # Handle password change
+        if form.new_password.data:
+            if not form.current_password.data:
+                flash('Current password is required to set a new password.', 'danger')
+                return render_template('profile/edit.html', form=form, title='Edit Profile')
+            if not current_user.check_password(form.current_password.data):
+                flash('Current password is incorrect.', 'danger')
+                return render_template('profile/edit.html', form=form, title='Edit Profile')
+            current_user.set_password(form.new_password.data)
+        
+        # Handle profile image upload
+        if form.profile_image.data:
+            file = form.profile_image.data
+            if hasattr(file, 'filename') and file.filename:
+                if current_app.config.get('CLOUDINARY_CLOUD_NAME'):
+                    # Upload to Cloudinary CDN
+                    import cloudinary.uploader
+                    # Delete old Cloudinary image if exists
+                    if current_user.profile_image and current_user.profile_image.startswith('http'):
+                        old_public_id = f"swiftbudget/profiles/{current_user.id}"
+                        try:
+                            cloudinary.uploader.destroy(old_public_id)
+                        except Exception:
+                            pass
+                    result = cloudinary.uploader.upload(
+                        file,
+                        folder='swiftbudget/profiles',
+                        public_id=str(current_user.id),
+                        overwrite=True,
+                        transformation=[
+                            {'width': 400, 'height': 400, 'crop': 'fill', 'gravity': 'face'}
+                        ]
+                    )
+                    current_user.profile_image = result['secure_url']
+                else:
+                    # Local fallback when Cloudinary is not configured
+                    filename = secure_filename(file.filename)
+                    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'png'
+                    unique_name = f"{current_user.id}_{uuid.uuid4().hex[:8]}.{ext}"
+                    
+                    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
+                    os.makedirs(upload_dir, exist_ok=True)
+                    
+                    # Delete old local image if exists
+                    if current_user.profile_image and not current_user.profile_image.startswith('http'):
+                        old_path = os.path.join(upload_dir, current_user.profile_image)
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    
+                    file.save(os.path.join(upload_dir, unique_name))
+                    current_user.profile_image = unique_name
+        
+        # Update basic fields
+        current_user.username = bleach.clean(form.username.data.strip())
+        current_user.email = form.email.data.strip().lower()
+        
+        db.session.commit()
+        flash('Profile updated successfully.', 'success')
+        return redirect(url_for('auth.profile'))
+    
+    return render_template('profile/edit.html', form=form, title='Edit Profile')
+
+
+@auth_bp.route('/profile/remove-image', methods=['POST'])
+@login_required
+def remove_profile_image():
+    """Remove the user's profile image."""
+    if current_user.profile_image:
+        if current_user.profile_image.startswith('http') and current_app.config.get('CLOUDINARY_CLOUD_NAME'):
+            # Delete from Cloudinary
+            import cloudinary.uploader
+            try:
+                cloudinary.uploader.destroy(f"swiftbudget/profiles/{current_user.id}")
+            except Exception:
+                pass
+        elif not current_user.profile_image.startswith('http'):
+            # Delete local file
+            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
+            old_path = os.path.join(upload_dir, current_user.profile_image)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        current_user.profile_image = None
+        db.session.commit()
+        flash('Profile image removed.', 'success')
+    return redirect(url_for('auth.edit_profile'))

@@ -57,6 +57,12 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 CURRENCY_SYMBOL=MK
 CURRENCY_CODE=MWK
 
+# Cloudinary (Image CDN for profile pictures)
+# Sign up at https://cloudinary.com (free tier: 25GB storage/bandwidth per month)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
 # Security
 SESSION_COOKIE_SECURE=True
 SESSION_COOKIE_HTTPONLY=True

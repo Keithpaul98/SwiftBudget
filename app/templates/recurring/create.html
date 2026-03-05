@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4 align-items-end">
+        <div class="col page-header">
+            <h1><i class="bi bi-plus-circle me-2" style="color:var(--primary)"></i>New Recurring Transaction</h1>
+            <p>Set up an automated recurring income or expense</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('recurring.index') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('recurring.create') }}" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Type</label>
+                                {{ form.transaction_type(class="form-select") }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Frequency</label>
+                                {{ form.frequency(class="form-select") }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.amount.label(class="form-label") }}
+                            {{ form.amount(class="form-control" + (" is-invalid" if form.amount.errors else "")) }}
+                            {% if form.amount.errors %}
+                            <div class="invalid-feedback">{% for e in form.amount.errors %}{{ e }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.category_id.label(class="form-label") }}
+                            {{ form.category_id(class="form-select" + (" is-invalid" if form.category_id.errors else "")) }}
+                            {% if form.category_id.errors %}
+                            <div class="invalid-feedback">{% for e in form.category_id.errors %}{{ e }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.project_id.label(class="form-label") }}
+                            {{ form.project_id(class="form-select") }}
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                {{ form.start_date.label(class="form-label") }}
+                                {{ form.start_date(class="form-control" + (" is-invalid" if form.start_date.errors else "")) }}
+                                {% if form.start_date.errors %}
+                                <div class="invalid-feedback">{% for e in form.start_date.errors %}{{ e }}{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                {{ form.end_date.label(class="form-label") }}
+                                {{ form.end_date(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control") }}
+                        </div>
+                        
+                        {{ form.submit(class="btn btn-primary w-100 py-2") }}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

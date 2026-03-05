@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    .guide-section { margin-bottom: 2rem; }
+    .guide-card { border: none; border-radius: 12px; overflow: hidden; }
+    .guide-card .card-header { 
+        background: transparent; border-bottom: 1px solid var(--border);
+        padding: 1rem 1.25rem; cursor: pointer; 
+    }
+    .guide-card .card-header:hover { background: var(--surface-hover); }
+    .guide-card .card-body { padding: 1.25rem; font-size: 0.9rem; line-height: 1.7; color: var(--text-secondary); }
+    .guide-icon { width: 36px; height: 36px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .guide-step { display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 0.75rem; }
+    .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+    .tip-box { background: rgba(99,102,241,.06); border-left: 3px solid var(--primary); border-radius: 0 8px 8px 0; padding: 0.75rem 1rem; margin-top: 0.75rem; font-size: 0.82rem; }
+    .formula-box { background: #f8fafc; border-radius: 8px; padding: 0.75rem 1rem; font-family: 'Courier New', monospace; font-size: 0.82rem; margin: 0.5rem 0; color: var(--text); }
+    .quick-nav a { text-decoration: none; font-size: 0.8rem; font-weight: 500; padding: 6px 12px; border-radius: 6px; background: var(--bg); color: var(--text-secondary); transition: all .15s; }
+    .quick-nav a:hover { background: var(--primary); color: #fff; }
+</style>
+
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="row mb-4 align-items-end">
+        <div class="col page-header">
+            <h1 style="font-size:1.5rem"><i class="bi bi-book me-2" style="color:var(--primary)"></i>Help & Guide</h1>
+            <p>Everything you need to know about SwiftBudget</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('auth.dashboard') }}" class="btn btn-outline-primary btn-sm" style="font-size:0.75rem">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Nav -->
+    <div class="quick-nav d-flex flex-wrap gap-2 mb-4">
+        <a href="#overview">Overview</a>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#transactions">Transactions</a>
+        <a href="#budgets">Budgets</a>
+        <a href="#recurring">Recurring</a>
+        <a href="#projects">Projects</a>
+        <a href="#tips">Tips</a>
+    </div>
+
+    <!-- Overview -->
+    <div class="guide-section" id="overview">
+        <div class="card guide-card">
+            <div class="card-header d-flex align-items-center gap-3" data-bs-toggle="collapse" data-bs-target="#collapseOverview" aria-expanded="true">
+                <div class="guide-icon" style="background:rgba(99,102,241,.1); color:var(--primary)"><i class="bi bi-wallet2"></i></div>
+                <div>
+                    <div class="fw-semibold">What is SwiftBudget?</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary)">A quick overview of the system</div>
+                </div>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </div>
+            <div class="collapse show" id="collapseOverview">
+                <div class="card-body">
+                    <p><strong>SwiftBudget</strong> is a personal finance manager that helps you track income and expenses, set budgets, monitor spending trends, and stay on top of your financial health.</p>
+                    <p class="mb-2"><strong>Key features:</strong></p>
+                    <ul style="padding-left:1.25rem">
+                        <li><strong>Dashboard</strong> — Visual overview of your finances with charts and actionable insights</li>
+                        <li><strong>Transactions</strong> — Record every income and expense with categories and descriptions</li>
+                        <li><strong>Budgets</strong> — Set spending limits per category and get alerts when you're close</li>
+                        <li><strong>Recurring</strong> — Automate regular transactions like rent, salary, or subscriptions</li>
+                        <li><strong>Projects</strong> — Group transactions under specific projects or goals</li>
+                    </ul>
+                    <div class="tip-box">
+                        <i class="bi bi-lightbulb me-1" style="color:var(--primary)"></i>
+                        <strong>Getting started?</strong> Add a few categories first, then start recording your transactions. The dashboard will populate automatically.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="guide-section" id="dashboard">
+        <div class="card guide-card">
+            <div class="card-header d-flex align-items-center gap-3" data-bs-toggle="collapse" data-bs-target="#collapseDashboard">
+                <div class="guide-icon" style="background:rgba(16,185,129,.1); color:#059669"><i class="bi bi-grid-1x2-fill"></i></div>
+                <div>
+                    <div class="fw-semibold">Dashboard</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary)">Understanding your financial overview</div>
+                </div>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </div>
+            <div class="collapse" id="collapseDashboard">
+                <div class="card-body">
+                    <p>The dashboard gives you a real-time snapshot of your financial health. Here's what each section means:</p>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Stat Cards (top row)</h6>
+                    <ul style="padding-left:1.25rem">
+                        <li><strong>Savings Rate</strong> — The percentage of income you're keeping. 20%+ is healthy, 0-19% is low, and negative means you're spending more than you earn.</li>
+                        <li><strong>Income</strong> — Total income for the selected time range.</li>
+                        <li><strong>Balance</strong> — Income minus expenses. Red means you're in deficit.</li>
+                        <li><strong>Projected</strong> — Estimated total expenses by month-end based on your current daily spending pace.</li>
+                    </ul>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Projected Expense — How It Works</h6>
+                    <p>This estimates where your spending will land by month-end:</p>
+                    <div class="formula-box">
+                        Projected = (Total Spent So Far ÷ Days Elapsed) × Days in Month
+                    </div>
+                    <p>For example, if you've spent MK 50,000 by Day 5 of a 31-day month:<br>
+                    Daily average = MK 10,000 → Projected = MK 310,000</p>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Pulse Chart</h6>
+                    <ul style="padding-left:1.25rem">
+                        <li><strong>Green area</strong> — Your income over time</li>
+                        <li><strong>Red line</strong> — Your expenses over time</li>
+                        <li><strong>Dashed vertical "Today" line</strong> — Marks the current day</li>
+                        <li><strong>Dashed red line (after Today)</strong> — Projected daily expense if you continue at the same pace</li>
+                        <li><strong>Tooltip</strong> — Hover any point to see the amount and the change from the previous period</li>
+                    </ul>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Category Donut</h6>
+                    <p>Shows how your expenses break down by category. The total in the center is your overall expenses. Categories under 5% of total are grouped into <strong>"Miscellaneous"</strong> to keep the chart clean.</p>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Budget vs. Actual</h6>
+                    <ul style="padding-left:1.25rem">
+                        <li><strong style="color:#6366f1">Blue bar</strong> — Under 80% of budget (on track)</li>
+                        <li><strong style="color:#f59e0b">Amber bar</strong> — 80–99% of budget (caution)</li>
+                        <li><strong style="color:#ef4444">Red bar</strong> — Over 100% of budget (over-spent)</li>
+                        <li><strong>Dark pacer dot</strong> — Where you <em>should</em> be based on the current day of the month. If the bar extends past this dot, you're spending faster than your monthly pace.</li>
+                    </ul>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Time Range</h6>
+                    <p>Use the buttons in the top-right (<strong>30d, 90d, 6mo, 1yr</strong>) to change the reporting period. The chart and all stats update accordingly.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions -->
+    <div class="guide-section" id="transactions">
+        <div class="card guide-card">
+            <div class="card-header d-flex align-items-center gap-3" data-bs-toggle="collapse" data-bs-target="#collapseTransactions">
+                <div class="guide-icon" style="background:rgba(239,68,68,.1); color:#ef4444"><i class="bi bi-arrow-left-right"></i></div>
+                <div>
+                    <div class="fw-semibold">Transactions</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary)">Recording and managing your income & expenses</div>
+                </div>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </div>
+            <div class="collapse" id="collapseTransactions">
+                <div class="card-body">
+                    <p>Transactions are the core of SwiftBudget. Every income or expense you record feeds into your dashboard, budgets, and reports.</p>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Adding a Transaction</h6>
+                    <div class="guide-step"><div class="step-num">1</div><div>Click <strong>"+ New"</strong> from the dashboard or <strong>"Add Transaction"</strong> from the Transactions page.</div></div>
+                    <div class="guide-step"><div class="step-num">2</div><div>Choose the <strong>type</strong>: Income or Expense.</div></div>
+                    <div class="guide-step"><div class="step-num">3</div><div>Select a <strong>category</strong> (e.g., Food, Transport, Salary).</div></div>
+                    <div class="guide-step"><div class="step-num">4</div><div>Enter the <strong>amount</strong>, <strong>date</strong>, and optional <strong>description</strong>.</div></div>
+                    <div class="guide-step"><div class="step-num">5</div><div>Optionally assign it to a <strong>project</strong>.</div></div>
+                    <div class="guide-step"><div class="step-num">6</div><div>Click <strong>Save</strong>. It immediately appears in your dashboard and reports.</div></div>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Filtering & Searching</h6>
+                    <p>Use the search bar at the top to find transactions by description or category name. Use the filters to narrow by date range, type, or category.</p>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Exporting</h6>
+                    <p>Click the <strong>CSV Export</strong> button to download all your filtered transactions as a spreadsheet. The file opens directly in Excel.</p>
+
+                    <div class="tip-box">
+                        <i class="bi bi-lightbulb me-1" style="color:var(--primary)"></i>
+                        <strong>Tip:</strong> Add transactions as they happen — it's much easier than trying to remember at the end of the week.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budgets -->
+    <div class="guide-section" id="budgets">
+        <div class="card guide-card">
+            <div class="card-header d-flex align-items-center gap-3" data-bs-toggle="collapse" data-bs-target="#collapseBudgets">
+                <div class="guide-icon" style="background:rgba(245,158,11,.1); color:#f59e0b"><i class="bi bi-pie-chart-fill"></i></div>
+                <div>
+                    <div class="fw-semibold">Budgets</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary)">Setting spending limits and tracking progress</div>
+                </div>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </div>
+            <div class="collapse" id="collapseBudgets">
+                <div class="card-body">
+                    <p>Budgets let you set maximum spending limits per category, so you know when you're approaching or exceeding your targets.</p>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Creating a Budget</h6>
+                    <div class="guide-step"><div class="step-num">1</div><div>Go to <strong>Budgets</strong> from the navigation bar.</div></div>
+                    <div class="guide-step"><div class="step-num">2</div><div>Click <strong>"+ New Budget"</strong>.</div></div>
+                    <div class="guide-step"><div class="step-num">3</div><div>Select a <strong>category</strong> (e.g., Food, Transport).</div></div>
+                    <div class="guide-step"><div class="step-num">4</div><div>Enter the <strong>budget amount</strong> — the max you want to spend.</div></div>
+                    <div class="guide-step"><div class="step-num">5</div><div>Choose the <strong>period</strong> (monthly is most common).</div></div>
+                    <div class="guide-step"><div class="step-num">6</div><div>Set an <strong>alert threshold</strong> (default 80%) — you'll get a dashboard warning when spending reaches this level.</div></div>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Reading the Progress Bars</h6>
+                    <p>On the dashboard, each budget shows a color-coded progress bar:</p>
+                    <ul style="padding-left:1.25rem">
+                        <li><strong style="color:#6366f1">Blue</strong> — Under 80%, you're on track</li>
+                        <li><strong style="color:#f59e0b">Amber</strong> — 80–99%, be careful</li>
+                        <li><strong style="color:#ef4444">Red</strong> — Over 100%, you've exceeded the budget</li>
+                    </ul>
+                    <p>The small <strong>dark dot</strong> on each bar shows where you should be based on the current day in the month. If the bar is past the dot, you're spending faster than pace.</p>
+
+                    <div class="tip-box">
+                        <i class="bi bi-lightbulb me-1" style="color:var(--primary)"></i>
+                        <strong>Tip:</strong> Start with your biggest expense categories (food, rent, transport). You can always add more later.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recurring Transactions -->
+    <div class="guide-section" id="recurring">
+        <div class="card guide-card">
+            <div class="card-header d-flex align-items-center gap-3" data-bs-toggle="collapse" data-bs-target="#collapseRecurring">
+                <div class="guide-icon" style="background:rgba(6,182,212,.1); color:#06b6d4"><i class="bi bi-arrow-repeat"></i></div>
+                <div>
+                    <div class="fw-semibold">Recurring Transactions</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary)">Automating regular income and expenses</div>
+                </div>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </div>
+            <div class="collapse" id="collapseRecurring">
+                <div class="card-body">
+                    <p>Recurring transactions save you from manually entering the same items each period. Set them up once and they generate automatically.</p>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Setting Up a Recurring Transaction</h6>
+                    <div class="guide-step"><div class="step-num">1</div><div>Go to <strong>Recurring</strong> from the navigation bar.</div></div>
+                    <div class="guide-step"><div class="step-num">2</div><div>Click <strong>"+ New Recurring"</strong>.</div></div>
+                    <div class="guide-step"><div class="step-num">3</div><div>Fill in: <strong>Amount</strong>, <strong>Type</strong> (income/expense), <strong>Category</strong>, <strong>Frequency</strong> (daily/weekly/monthly/yearly).</div></div>
+                    <div class="guide-step"><div class="step-num">4</div><div>Set the <strong>Next Due Date</strong> — when the first occurrence should happen.</div></div>
+                    <div class="guide-step"><div class="step-num">5</div><div>Optionally set an <strong>End Date</strong> to stop after a certain date.</div></div>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Processing Due Transactions</h6>
+                    <p>Recurring items don't create transactions automatically on page load. You need to click the <strong>"Process Due"</strong> button. This:</p>
+                    <ul style="padding-left:1.25rem">
+                        <li>Checks all active recurring items whose due date has passed</li>
+                        <li>Creates actual transactions for each one</li>
+                        <li>Advances the due date to the next period (e.g., +1 month)</li>
+                    </ul>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Managing Recurring Items</h6>
+                    <ul style="padding-left:1.25rem">
+                        <li><strong>Pause/Resume</strong> <i class="bi bi-pause"></i> / <i class="bi bi-play"></i> — Temporarily stop a recurring item without deleting it</li>
+                        <li><strong>Edit</strong> <i class="bi bi-pencil"></i> — Change amount, frequency, category, etc.</li>
+                        <li><strong>Delete</strong> <i class="bi bi-trash"></i> — Permanently remove the rule (transactions already generated remain)</li>
+                    </ul>
+
+                    <div class="tip-box">
+                        <i class="bi bi-lightbulb me-1" style="color:var(--primary)"></i>
+                        <strong>Tip:</strong> Set up recurring items for rent, salary, subscriptions, and utility bills. Click "Process Due" at the start of each month.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects -->
+    <div class="guide-section" id="projects">
+        <div class="card guide-card">
+            <div class="card-header d-flex align-items-center gap-3" data-bs-toggle="collapse" data-bs-target="#collapseProjects">
+                <div class="guide-icon" style="background:rgba(139,92,246,.1); color:#8b5cf6"><i class="bi bi-collection-fill"></i></div>
+                <div>
+                    <div class="fw-semibold">Projects</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary)">Grouping transactions by goal or event</div>
+                </div>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </div>
+            <div class="collapse" id="collapseProjects">
+                <div class="card-body">
+                    <p>Projects let you tag transactions with a specific goal or event, so you can track how much a particular effort costs or earns.</p>
+
+                    <h6 class="fw-semibold mt-3 mb-2">Use Cases</h6>
+                    <ul style="padding-left:1.25rem">
+                        <li><strong>Home renovation</strong> — Track all expenses related to a building project</li>
+                        <li><strong>Holiday trip</strong> — See exactly what a vacation cost</li>
+                        <li><strong>Side hustle</strong> — Separate business income and expenses from personal</li>
+                        <li><strong>Wedding</strong> — Monitor costs across multiple categories</li>
+                    </ul>
+
+                    <h6 class="fw-semibold mt-3 mb-2">How to Use</h6>
+                    <div class="guide-step"><div class="step-num">1</div><div>Go to <strong>Projects</strong> and click <strong>"+ New Project"</strong>.</div></div>
+                    <div class="guide-step"><div class="step-num">2</div><div>Give it a name and optional description.</div></div>
+                    <div class="guide-step"><div class="step-num">3</div><div>When adding or editing a transaction, select this project from the <strong>Project</strong> dropdown.</div></div>
+                    <div class="guide-step"><div class="step-num">4</div><div>View the project page to see all associated transactions and totals.</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tips & Best Practices -->
+    <div class="guide-section" id="tips">
+        <div class="card guide-card">
+            <div class="card-header d-flex align-items-center gap-3" data-bs-toggle="collapse" data-bs-target="#collapseTips">
+                <div class="guide-icon" style="background:rgba(16,185,129,.1); color:#10b981"><i class="bi bi-lightbulb"></i></div>
+                <div>
+                    <div class="fw-semibold">Tips & Best Practices</div>
+                    <div style="font-size:0.75rem; color:var(--text-secondary)">Get the most out of SwiftBudget</div>
+                </div>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </div>
+            <div class="collapse" id="collapseTips">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 rounded" style="background:var(--bg)">
+                                <h6 class="fw-semibold mb-2"><i class="bi bi-1-circle me-1" style="color:var(--primary)"></i> Record Daily</h6>
+                                <p class="mb-0" style="font-size:0.82rem">Log transactions as they happen. Waiting until the end of the week leads to forgotten expenses and inaccurate data.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded" style="background:var(--bg)">
+                                <h6 class="fw-semibold mb-2"><i class="bi bi-2-circle me-1" style="color:var(--primary)"></i> Set Realistic Budgets</h6>
+                                <p class="mb-0" style="font-size:0.82rem">Start by tracking for one month without budgets. Then set budgets based on your actual spending patterns, not wishful thinking.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded" style="background:var(--bg)">
+                                <h6 class="fw-semibold mb-2"><i class="bi bi-3-circle me-1" style="color:var(--primary)"></i> Use the Pacer</h6>
+                                <p class="mb-0" style="font-size:0.82rem">The budget pacer dot shows where you should be. If your bar is past the dot mid-month, you need to slow down spending in that category.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded" style="background:var(--bg)">
+                                <h6 class="fw-semibold mb-2"><i class="bi bi-4-circle me-1" style="color:var(--primary)"></i> Aim for 20% Savings</h6>
+                                <p class="mb-0" style="font-size:0.82rem">A savings rate of 20% or higher is considered healthy. The Savings Rate indicator on the dashboard makes this easy to track.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded" style="background:var(--bg)">
+                                <h6 class="fw-semibold mb-2"><i class="bi bi-5-circle me-1" style="color:var(--primary)"></i> Automate the Obvious</h6>
+                                <p class="mb-0" style="font-size:0.82rem">Set up recurring transactions for salary, rent, and subscriptions. Click "Process Due" at the start of each month.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 rounded" style="background:var(--bg)">
+                                <h6 class="fw-semibold mb-2"><i class="bi bi-6-circle me-1" style="color:var(--primary)"></i> Review Weekly</h6>
+                                <p class="mb-0" style="font-size:0.82rem">Spend 5 minutes each Sunday checking your dashboard. Are you on pace? Any budget alerts? This small habit makes a big difference.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currency Note -->
+    <div class="text-center mb-4" style="font-size:0.8rem; color:var(--text-secondary)">
+        <i class="bi bi-info-circle me-1"></i> All amounts in SwiftBudget are displayed in <strong>{{ currency_symbol }} (Malawi Kwacha)</strong>.
+    </div>
+</div>
+{% endblock %}

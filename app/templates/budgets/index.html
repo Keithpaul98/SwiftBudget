@@ -3,14 +3,14 @@
 {% block content %}
 <div class="container mt-4">
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1>Budget Goals</h1>
-            <p class="text-muted">Track your spending limits and get alerts</p>
+    <div class="row mb-4 align-items-end">
+        <div class="col page-header">
+            <h1><i class="bi bi-pie-chart-fill me-2" style="color:var(--primary)"></i>Budget Goals</h1>
+            <p>Track your spending limits and get alerts</p>
         </div>
-        <div class="col-md-4 text-end">
+        <div class="col-auto">
             <a href="{{ url_for('budgets.create') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Add Budget Goal
+                <i class="bi bi-plus-lg me-1"></i> Add Budget Goal
             </a>
         </div>
     </div>
@@ -112,10 +112,10 @@
                 {% endfor %}
             {% else %}
                 <div class="card">
-                    <div class="card-body text-center py-5">
-                        <i class="bi bi-piggy-bank" style="font-size: 3rem; color: #ccc;"></i>
-                        <p class="text-muted mt-3">No budget goals yet.</p>
-                        <a href="{{ url_for('budgets.create') }}" class="btn btn-primary">Create Your First Budget Goal</a>
+                    <div class="empty-state">
+                        <i class="bi bi-piggy-bank"></i>
+                        <p>No budget goals yet</p>
+                        <a href="{{ url_for('budgets.create') }}" class="btn btn-primary btn-sm">Create Your First Budget Goal</a>
                     </div>
                 </div>
             {% endif %}

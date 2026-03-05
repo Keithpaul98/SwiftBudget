@@ -62,7 +62,9 @@ class TestProductionConfig:
         """Production should require HTTPS for session cookies."""
         assert ProductionConfig.SESSION_COOKIE_SECURE is True
     
-    def test_nullpool_configured(self):
-        """Production should use NullPool for free-tier database."""
-        from sqlalchemy.pool import NullPool
-        assert ProductionConfig.SQLALCHEMY_ENGINE_OPTIONS['poolclass'] == NullPool
+    def test_connection_pooling_configured(self):
+        """Production should have connection pooling configured."""
+        opts = ProductionConfig.SQLALCHEMY_ENGINE_OPTIONS
+        assert 'pool_size' in opts
+        assert 'pool_pre_ping' in opts
+        assert opts['pool_pre_ping'] is True

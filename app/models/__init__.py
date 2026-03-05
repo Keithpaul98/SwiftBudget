@@ -14,3 +14,4 @@ from app.models.transaction import Transaction
 from app.models.budget_goal import BudgetGoal
 from app.models.project import Project
 from app.models.audit_log import AuditLog
+from app.models.recurring_transaction import RecurringTransaction

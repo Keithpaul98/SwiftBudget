@@ -58,7 +58,8 @@ class TestAppFactory:
         # Test 404 handler
         response = client.get('/nonexistent-page')
         assert response.status_code == 404
-        assert b'error' in response.data
+        # Error handlers return styled HTML pages
+        assert b'404' in response.data or b'Not Found' in response.data
     
     def test_logging_configured(self, app):
         """Test that logging is configured."""

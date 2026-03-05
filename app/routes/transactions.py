@@ -8,7 +8,7 @@ Why separate transactions blueprint?
 - Easy to add API endpoints later
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, Response
 from flask_login import login_required, current_user
 from app import db
 from app.models.transaction import Transaction
@@ -18,6 +18,8 @@ from app.services.category_service import CategoryService
 from app.utils.audit import audit_log
 from decimal import Decimal
 import bleach
+import csv
+import io
 
 # Create blueprint
 transactions_bp = Blueprint(
@@ -50,6 +52,7 @@ def index():
         transaction_type = None
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+    search_query = request.args.get('q', '').strip()
     
     # Convert date strings to date objects
     from datetime import datetime
@@ -67,6 +70,15 @@ def index():
         end_date=end_date
     )
     
+    # Apply search filter on description and category name
+    if search_query:
+        q_lower = search_query.lower()
+        transactions = [
+            t for t in transactions
+            if (t.description and q_lower in t.description.lower()) or
+               (t.category and q_lower in t.category.name.lower())
+        ]
+    
     # Get user categories for filter form
     categories = CategoryService.get_user_categories(current_user.id)
     
@@ -80,6 +92,7 @@ def index():
         'transactions/index.html',
         transactions=transactions,
         filter_form=filter_form,
+        search_query=search_query,
         title='Transactions'
     )
 
@@ -355,4 +368,52 @@ def view(transaction_id):
         'transactions/view.html',
         transaction=transaction,
         title='Transaction Details'
+    )
+
+
+@transactions_bp.route('/export/csv')
+@login_required
+def export_csv():
+    """Export user transactions to CSV file."""
+    from datetime import datetime
+    
+    # Get optional date filters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    if end_date:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+    
+    transactions = TransactionService.get_user_transactions(
+        user_id=current_user.id,
+        start_date=start_date,
+        end_date=end_date
+    )
+    
+    # Build CSV in memory with UTF-8 BOM for Excel compatibility
+    output = io.StringIO()
+    output.write('\ufeff')  # UTF-8 BOM so Excel recognises encoding and columns
+    writer = csv.writer(output)
+    writer.writerow(['Date', 'Type', 'Category', 'Description', 'Amount', 'Project'])
+    
+    for t in transactions:
+        writer.writerow([
+            t.transaction_date.strftime('%m/%d/%Y') if t.transaction_date else '',
+            t.transaction_type.capitalize() if t.transaction_type else '',
+            t.category.name if t.category else '',
+            t.description or '',
+            float(t.amount),
+            t.project.name if t.project else ''
+        ])
+    
+    output.seek(0)
+    
+    filename = f'swiftbudget_transactions_{datetime.now().strftime("%Y%m%d")}.csv'
+    
+    return Response(
+        output.getvalue().encode('utf-8-sig'),
+        mimetype='text/csv; charset=utf-8-sig',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
     )

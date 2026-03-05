@@ -15,7 +15,7 @@ Reference: https://flask.palletsprojects.com/en/2.3.x/patterns/appfactories/
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask, jsonify
+from flask import Flask, jsonify, redirect, url_for, render_template_string
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, current_user
@@ -23,6 +23,7 @@ from flask_bcrypt import Bcrypt
 from flask_mail import Mail
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
 from config import get_config
 
 # Initialize extensions (but don't bind to app yet)
@@ -33,6 +34,7 @@ migrate = Migrate()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
 mail = Mail()
+csrf = CSRFProtect()
 def get_user_identifier():
     """Rate limit by user ID when authenticated, otherwise by IP."""
     if current_user and hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
@@ -78,6 +80,17 @@ def create_app(config_name=None):
     bcrypt.init_app(app)
     mail.init_app(app)
     limiter.init_app(app)
+    csrf.init_app(app)
+    
+    # Configure Cloudinary (image CDN) if credentials are set
+    if app.config.get('CLOUDINARY_CLOUD_NAME'):
+        import cloudinary
+        cloudinary.config(
+            cloud_name=app.config['CLOUDINARY_CLOUD_NAME'],
+            api_key=app.config['CLOUDINARY_API_KEY'],
+            api_secret=app.config['CLOUDINARY_API_SECRET'],
+            secure=True
+        )
     
     # Configure Flask-Login
     login_manager.login_view = 'auth.login'  # Redirect to login page if not authenticated
@@ -121,6 +134,9 @@ def create_app(config_name=None):
     app.register_blueprint(budgets_bp)
     app.register_blueprint(projects_bp)
     
+    from app.routes.recurring import recurring_bp
+    app.register_blueprint(recurring_bp)
+    
     # Register error handlers
     register_error_handlers(app)
     
@@ -135,9 +151,10 @@ def create_app(config_name=None):
             content_security_policy={
                 'default-src': "'self'",
                 'script-src': ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
-                'style-src': ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
-                'img-src': ["'self'", "data:"],
-                'font-src': ["'self'", "cdn.jsdelivr.net"],
+                'style-src': ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net", "fonts.googleapis.com"],
+                'img-src': ["'self'", "data:", "res.cloudinary.com"],
+                'font-src': ["'self'", "cdn.jsdelivr.net", "fonts.gstatic.com"],
+                'connect-src': ["'self'"],
             }
         )
     else:
@@ -151,6 +168,14 @@ def create_app(config_name=None):
             response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
             response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
             return response
+    
+    # Root route redirect
+    @app.route('/')
+    def index():
+        """Redirect root to dashboard or login."""
+        if current_user.is_authenticated:
+            return redirect(url_for('auth.dashboard'))
+        return redirect(url_for('auth.login'))
     
     # Health check endpoint
     @app.route('/health')
@@ -248,28 +273,54 @@ def register_error_handlers(app):
     - Security: Don't expose internal details to users
     """
     
+    ERROR_TEMPLATE = '''
+    {% extends "base.html" %}
+    {% block content %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 text-center">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body py-5">
+                        <div style="font-size: 4rem; color: var(--muted-color);">{{ code }}</div>
+                        <h2 class="mt-3">{{ title }}</h2>
+                        <p class="text-muted mt-2">{{ message }}</p>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-primary mt-3">
+                            <i class="bi bi-house"></i> Go Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}
+    '''
+
     @app.errorhandler(404)
     def not_found_error(error):
-        """Handle 404 Not Found errors."""
         app.logger.warning(f'404 error: {error}')
-        return {'error': 'Page not found'}, 404
+        return render_template_string(ERROR_TEMPLATE, code=404,
+            title='Page Not Found',
+            message='The page you are looking for doesn\'t exist or has been moved.'), 404
     
     @app.errorhandler(500)
     def internal_error(error):
-        """Handle 500 Internal Server errors."""
         app.logger.error(f'500 error: {error}', exc_info=True)
         db.session.rollback()
-        return {'error': 'Internal server error'}, 500
+        return render_template_string(ERROR_TEMPLATE, code=500,
+            title='Server Error',
+            message='Something went wrong on our end. Please try again later.'), 500
     
     @app.errorhandler(403)
     def forbidden_error(error):
-        """Handle 403 Forbidden errors."""
         app.logger.warning(f'403 error: {error}')
-        return {'error': 'Access forbidden'}, 403
+        return render_template_string(ERROR_TEMPLATE, code=403,
+            title='Access Forbidden',
+            message='You don\'t have permission to access this page.'), 403
     
     @app.errorhandler(Exception)
     def handle_exception(error):
-        """Handle all unhandled exceptions."""
         app.logger.error(f'Unhandled exception: {error}', exc_info=True)
         db.session.rollback()
-        return {'error': 'An unexpected error occurred'}, 500
+        return render_template_string(ERROR_TEMPLATE, code=500,
+            title='Unexpected Error',
+            message='Something went wrong. Please try again later.'), 500
