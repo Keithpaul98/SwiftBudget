@@ -1,10 +1,11 @@
 # SwiftBudget - Personal & Household Budgeting Application
 
 **Version:** 1.0.0  
-**Status:** ✅ Development Complete - Ready for Deployment  
+**Status:** ✅ **LIVE IN PRODUCTION**  
 **Framework:** Flask (Python)  
 **Database:** PostgreSQL  
-**Deployment:** Free-Tier Cloud (Render/Heroku + PostgreSQL)
+**Deployment:** Render.com (Free Tier)  
+**Live URL:** https://swiftbudget.onrender.com
 
 ---
 
@@ -16,6 +17,7 @@ SwiftBudget is a lightweight, responsive web application designed for personal a
 
 ✅ **Completed (v1.0)**
 - **User Authentication** - Secure signup/login/logout with bcrypt password hashing
+- **User Profiles** - Profile picture uploads via Cloudinary CDN, username/email/password management
 - **Transaction Management** - Full CRUD operations for income and expenses
 - **Smart Categorization** - Default categories + custom user categories
 - **Budget Goals** - Monthly/weekly/yearly budget limits with threshold alerts
@@ -24,9 +26,11 @@ SwiftBudget is a lightweight, responsive web application designed for personal a
 - **Email Notifications** - Budget alerts and welcome emails via Gmail SMTP
 - **Advanced Features** - Quantity/unit price tracking, soft deletes, audit trails
 - **Beautiful UI** - Modern, responsive design with Bootstrap 5 and Chart.js
+- **Auto-dismissing Alerts** - Flash messages automatically fade after 4 seconds
 - **Malawi Kwacha Support** - Full MK currency integration
 
 🎯 **Future Enhancements (v1.1+)**
+- Receipt OCR scanner - Upload receipts and auto-extract transaction details
 - Recurring transactions automation
 - Data export (CSV/PDF reports)
 - Advanced filtering and search
@@ -62,7 +66,7 @@ SwiftBudget is a lightweight, responsive web application designed for personal a
        │
        ▼
 ┌─────────────┐
-│  Database   │ (PostgreSQL on Supabase)
+│  Database   │ (PostgreSQL on Render)
 └─────────────┘
 ```
 
@@ -200,29 +204,45 @@ See [Testing Strategy Document](docs/07_Testing_Strategy_Document.md) for detail
 
 ## 📦 Deployment
 
-**Free-Tier Stack:**
+**Production Stack:**
 - **Hosting:** Render.com (512MB RAM, auto-deploy from GitHub)
-- **Database:** Supabase (500MB PostgreSQL, daily backups)
+- **Database:** Render PostgreSQL (Free tier)
+- **CDN:** Cloudinary (25GB storage/bandwidth per month)
 - **Email:** Gmail SMTP (500 emails/day)
 - **Total Cost:** $0/month
 
+**Live Application:** https://swiftbudget.onrender.com
+
+**Note:** Free tier sleeps after 15 minutes of inactivity (30-50 second wake time on first request)
+
 **Deployment Steps:**
 
-1. **Create Supabase Project**
-   - Sign up at https://supabase.com
-   - Create new project, save connection string
+1. **Create Render PostgreSQL Database**
+   - Sign up at https://render.com
+   - Create new PostgreSQL database (free tier)
+   - Copy Internal Database URL and modify scheme to `postgresql+psycopg://`
 
 2. **Create Render Web Service**
    - Connect GitHub repository
-   - Set environment variables (DATABASE_URL, SECRET_KEY, etc.)
+   - Set Start Command: `gunicorn run:app`
+   - Set environment variables (DATABASE_URL, SECRET_KEY, CLOUDINARY credentials, etc.)
    - Deploy automatically on push to `main` branch
 
-3. **Configure Email**
+3. **Configure Cloudinary CDN**
+   - Sign up at https://cloudinary.com (free tier)
+   - Get credentials from console
+   - Add to Render environment variables
+
+4. **Configure Email**
    - Enable 2FA on Gmail
    - Generate app password
    - Add to Render environment variables
 
-See [Deployment Document](docs/05_Deployment_Infrastructure_Document.md) for full guide.
+5. **Run Database Migrations**
+   - Run `flask db upgrade` locally pointing to production DATABASE_URL
+   - Or use Render Shell (paid feature)
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed guide with troubleshooting.
 
 ---
 
@@ -247,9 +267,9 @@ See [Deployment Document](docs/05_Deployment_Infrastructure_Document.md) for ful
 ### Infrastructure
 - **PostgreSQL 14+** - Database
 - **Gunicorn** - WSGI server
-- **Render.com** - Application hosting
-- **Supabase** - Database hosting
-- **GitHub Actions** - CI/CD
+- **Render.com** - Application & database hosting
+- **Cloudinary** - Image CDN for profile pictures
+- **GitHub** - Version control & auto-deploy trigger
 
 ---
 
@@ -273,13 +293,15 @@ See [Deployment Document](docs/05_Deployment_Infrastructure_Document.md) for ful
 - [x] Integration Tests - Ready
 - [x] Test Coverage: 80%+ Overall
 
-### � Deployment Readiness
-- [x] Production configuration files
-- [x] Database migrations complete
-- [x] Security best practices implemented
-- [x] Deployment documentation
-- [x] Environment templates
-- [x] Ready for Heroku/Render deployment
+### 🚀 Deployment Status
+- [x] **DEPLOYED TO PRODUCTION** ✅
+- [x] Live at https://swiftbudget.onrender.com
+- [x] PostgreSQL database configured on Render
+- [x] Cloudinary CDN integrated for profile images
+- [x] All database migrations applied
+- [x] Environment variables configured
+- [x] Auto-deploy from GitHub enabled
+- [x] Security best practices implemented (HTTPS, CSP, bcrypt)
 
 ---
 
@@ -365,25 +387,23 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Last Updated:** February 20, 2026  
+**Last Updated:** March 5, 2026  
 **Application Version:** 1.0.0  
-**Project Phase:** ✅ Development Complete - Ready for Production Deployment
+**Project Phase:** ✅ **LIVE IN PRODUCTION**  
+**Deployment Date:** March 5, 2026
 
 ---
 
-## 🎯 Next Steps
+## 🎯 Next Steps (v1.1 Development)
 
-1. **Review Documentation** - Read through all 7 documentation files
-2. **Set Up Development Environment** - Install dependencies, configure database
-3. **Create Project Structure** - Set up Flask application skeleton
-4. **Implement Database Models** - Create SQLAlchemy models
-5. **Build Service Layer** - Implement business logic
-6. **Develop Routes** - Create Flask blueprints and routes
-7. **Design Templates** - Build Jinja2 templates with Bootstrap
-8. **Write Tests** - Achieve 80%+ coverage
-9. **Deploy to Staging** - Test on Render.com
-10. **Launch v1.0** - Deploy to production!
+1. **Receipt OCR Scanner** - Upload receipts and auto-extract transaction details
+2. **Recurring Transactions** - Automate monthly/weekly recurring expenses
+3. **Data Export** - CSV/PDF reports for financial records
+4. **Advanced Filtering** - Search and filter transactions by multiple criteria
+5. **Performance Optimization** - Reduce wake time, optimize queries
+6. **Mobile Responsiveness** - Improve mobile UX
+7. **Multi-currency Support** - Support additional currencies beyond MWK
 
 ---
 
-**Ready to build something amazing? Let's get started! 🚀**
+**🎉 Application is LIVE! Visit https://swiftbudget.onrender.com to try it out!**

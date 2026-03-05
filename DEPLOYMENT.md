@@ -126,12 +126,114 @@ python run.py
    heroku open
    ```
 
-### Option 2: Render
+### Option 2: Render (Recommended - Currently Deployed)
 
-1. **Create `render.yaml`** (already in repo)
-2. **Connect GitHub repo** at https://render.com
-3. **Set environment variables** in Render dashboard
-4. **Deploy** - automatic on git push
+**Live Application:** https://swiftbudget.onrender.com
+
+#### Step 1: Create PostgreSQL Database
+
+1. Sign up at https://render.com
+2. Click **"New +"** → **"PostgreSQL"**
+3. Configure:
+   - **Name:** `swiftbudget-db`
+   - **Database:** `swiftbudget` (auto-filled)
+   - **Region:** Oregon (US West) or closest to you
+   - **Plan:** Free
+4. Click **"Create Database"**
+5. Wait for provisioning (~1-2 minutes)
+6. Copy the **Internal Database URL** from the Connections section
+7. **IMPORTANT:** Modify the URL scheme from `postgresql://` to `postgresql+psycopg://`
+   - Example: `postgresql+psycopg://user:pass@host/db`
+
+#### Step 2: Create Web Service
+
+1. Click **"New +"** → **"Web Service"**
+2. Connect your GitHub repository
+3. Configure:
+   - **Name:** `swiftbudget`
+   - **Region:** Same as database
+   - **Branch:** `main`
+   - **Root Directory:** Leave blank
+   - **Runtime:** Python 3
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `gunicorn run:app` ⚠️ **CRITICAL - Must be exactly this**
+   - **Plan:** Free
+
+#### Step 3: Set Environment Variables
+
+In the **Environment** tab, add these variables:
+
+```env
+FLASK_ENV=production
+SECRET_KEY=<generate with: python -c "import secrets; print(secrets.token_hex(32))">
+DATABASE_URL=postgresql+psycopg://user:pass@host/db  # From Step 1
+CLOUDINARY_CLOUD_NAME=<from cloudinary.com console>
+CLOUDINARY_API_KEY=<from cloudinary.com console>
+CLOUDINARY_API_SECRET=<from cloudinary.com console>
+MAIL_USERNAME=<your-gmail@gmail.com>
+MAIL_PASSWORD=<gmail-app-password>
+SESSION_COOKIE_SECURE=True
+CURRENCY_SYMBOL=MK
+CURRENCY_CODE=MWK
+LOG_LEVEL=INFO
+```
+
+#### Step 4: Deploy
+
+1. Click **"Create Web Service"**
+2. Render will automatically build and deploy
+3. Watch the **Logs** tab for build progress
+4. Wait for `==> Your service is live 🎉`
+
+#### Step 5: Run Database Migrations
+
+Since Shell is a paid feature on Render, run migrations locally:
+
+```bash
+# Set production DATABASE_URL temporarily
+export DATABASE_URL="postgresql+psycopg://user:pass@host/db"  # Linux/Mac
+# OR
+$env:DATABASE_URL="postgresql+psycopg://user:pass@host/db"  # Windows PowerShell
+
+# Run migration
+flask db upgrade
+```
+
+#### Common Issues & Solutions
+
+**Issue 1: `No matching distribution found for Authlib==1.3.0.post1`**
+- **Fix:** Update `requirements.txt` to `Authlib==1.3.2`
+
+**Issue 2: `No matching distribution found for psycopg[binary]==3.1.18`**
+- **Fix:** Update to `psycopg[binary]==3.3.3` (compatible with Python 3.14)
+
+**Issue 3: `Failed to find attribute 'app' in 'app'`**
+- **Fix:** Set Start Command to `gunicorn run:app` (not `gunicorn app:app`)
+
+**Issue 4: `ModuleNotFoundError: No module named 'psycopg2'`**
+- **Fix:** Ensure DATABASE_URL uses `postgresql+psycopg://` scheme (not `postgresql://`)
+
+**Issue 5: CSP violations for CDN source maps**
+- **Fix:** Add `cdn.jsdelivr.net` to `connect-src` in CSP (already in `app/__init__.py`)
+
+**Issue 6: Worker timeout / Out of memory during signup/login**
+- **Fix:** Reduce `BCRYPT_LOG_ROUNDS` to 10 in `config.py` (already configured)
+- **Cause:** Free tier has 512MB RAM, bcrypt with 12 rounds is too intensive
+
+**Issue 7: Slow first load (30-50 seconds)**
+- **Expected:** Free tier sleeps after 15 minutes of inactivity
+- **Solution:** Upgrade to paid tier ($7/month) or accept wake time
+
+#### Auto-Deploy Setup
+
+Render automatically deploys on every push to `main` branch:
+
+```bash
+git add .
+git commit -m "Update feature"
+git push origin main
+# Render will auto-deploy in ~2-3 minutes
+```
 
 ### Option 3: VPS (Ubuntu/Debian)
 
