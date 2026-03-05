@@ -19,7 +19,7 @@ bleach==6.3.0
 email-validator==2.1.0.post1
 
 # OAuth (Google Sign-In)
-Authlib==1.3.0.post1
+Authlib==1.3.2
 
 # Image CDN
 cloudinary==1.44.1
