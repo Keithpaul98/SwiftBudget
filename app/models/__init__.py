@@ -13,3 +13,4 @@ from app.models.category import Category
 from app.models.transaction import Transaction
 from app.models.budget_goal import BudgetGoal
 from app.models.project import Project
+from app.models.audit_log import AuditLog

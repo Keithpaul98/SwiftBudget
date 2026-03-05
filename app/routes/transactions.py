@@ -15,7 +15,9 @@ from app.models.transaction import Transaction
 from app.forms.transaction import TransactionForm, TransactionFilterForm
 from app.services.transaction_service import TransactionService
 from app.services.category_service import CategoryService
+from app.utils.audit import audit_log
 from decimal import Decimal
+import bleach
 
 # Create blueprint
 transactions_bp = Blueprint(
@@ -117,6 +119,9 @@ def create():
             if unit_price:
                 amount = Decimal(str(quantity)) * unit_price
             
+            # Sanitize user input
+            description = bleach.clean(form.description.data or '', tags=[], strip=True)
+            
             # Create transaction using service
             transaction = TransactionService.create_transaction(
                 user_id=current_user.id,
@@ -124,7 +129,7 @@ def create():
                 category_id=form.category_id.data,
                 transaction_type=form.transaction_type.data,
                 transaction_date=form.transaction_date.data,
-                description=form.description.data
+                description=description
             )
             
             # Update quantity, unit_price, and project if provided
@@ -163,6 +168,14 @@ def create():
                     import traceback
                     current_app.logger.error(traceback.format_exc())
             
+            # Audit log
+            audit_log('CREATE', 'Transaction', transaction.id, new_value={
+                'amount': str(amount),
+                'type': form.transaction_type.data,
+                'category_id': form.category_id.data
+            })
+            db.session.commit()
+            
             flash(f'{form.transaction_type.data.capitalize()} transaction created successfully!', 'success')
             return redirect(url_for('transactions.index'))
             
@@ -171,7 +184,7 @@ def create():
         except Exception as e:
             db.session.rollback()
             flash('An error occurred while creating the transaction.', 'danger')
-            print(f"Transaction creation error: {e}")
+            current_app.logger.error(f'Transaction creation failed: {e}', exc_info=True)
     
     return render_template(
         'transactions/create.html',
@@ -217,6 +230,17 @@ def edit(transaction_id):
             if unit_price:
                 amount = Decimal(str(quantity)) * unit_price
             
+            # Sanitize user input
+            description = bleach.clean(form.description.data or '', tags=[], strip=True)
+            
+            # Capture old values for audit
+            old_values = {
+                'amount': str(transaction.amount),
+                'type': transaction.transaction_type,
+                'category_id': transaction.category_id,
+                'description': transaction.description
+            }
+            
             # Update transaction using service
             updated_transaction = TransactionService.update_transaction(
                 transaction_id=transaction_id,
@@ -225,13 +249,21 @@ def edit(transaction_id):
                 category_id=form.category_id.data,
                 transaction_type=form.transaction_type.data,
                 transaction_date=form.transaction_date.data,
-                description=form.description.data
+                description=description
             )
             
             # Update quantity, unit_price, and project
             updated_transaction.quantity = int(quantity) if quantity else 1
             updated_transaction.unit_price = unit_price
             updated_transaction.project_id = form.project_id.data if form.project_id.data else None
+            db.session.commit()
+            
+            # Audit log
+            audit_log('UPDATE', 'Transaction', transaction_id, old_value=old_values, new_value={
+                'amount': str(amount),
+                'type': form.transaction_type.data,
+                'category_id': form.category_id.data
+            })
             db.session.commit()
             
             flash('Transaction updated successfully!', 'success')
@@ -242,7 +274,7 @@ def edit(transaction_id):
         except Exception as e:
             db.session.rollback()
             flash('An error occurred while updating the transaction.', 'danger')
-            print(f"Transaction update error: {e}")
+            current_app.logger.error(f'Transaction update failed: {e}', exc_info=True)
     
     # Populate project choices
     from app.services.project_service import ProjectService
@@ -286,14 +318,17 @@ def delete(transaction_id):
         Redirect to transactions list
     """
     try:
+        # Audit log before delete
+        audit_log('DELETE', 'Transaction', transaction_id)
         TransactionService.delete_transaction(transaction_id, current_user.id)
+        db.session.commit()
         flash('Transaction deleted successfully!', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
     except Exception as e:
         db.session.rollback()
         flash('An error occurred while deleting the transaction.', 'danger')
-        print(f"Transaction deletion error: {e}")
+        current_app.logger.error(f'Transaction deletion failed: {e}', exc_info=True)
     
     return redirect(url_for('transactions.index'))
 

@@ -21,6 +21,8 @@ from app import db, limiter
 from app.models.user import User
 from app.models.category import Category
 from app.forms.auth import SignupForm, LoginForm
+from app.utils.audit import audit_log
+import bleach
 
 # Create blueprint
 auth_bp = Blueprint(
@@ -69,7 +71,7 @@ def signup():
         
         # Create new user
         user = User(
-            username=form.username.data,
+            username=bleach.clean(form.username.data, tags=[], strip=True),
             email=form.email.data.lower()  # Store email in lowercase
         )
         # Why lowercase email?
@@ -101,14 +103,16 @@ def signup():
             except Exception as e:
                 current_app.logger.error(f'Failed to send welcome email: {e}')
             
+            audit_log('CREATE', 'User', user.id, new_value={'username': user.username, 'email': user.email})
+            db.session.commit()
+            
             flash('Account created successfully! Please log in.', 'success')
             return redirect(url_for('auth.login'))
             
         except Exception as e:
             db.session.rollback()
             flash('An error occurred during signup. Please try again.', 'danger')
-            # Log the error for debugging
-            print(f"Signup error: {e}")
+            current_app.logger.error(f'Signup failed: {e}', exc_info=True)
     
     # GET request or form validation failed
     return render_template('auth/signup.html', form=form, title='Sign Up')
@@ -163,6 +167,8 @@ def login():
             db.session.commit()
             
             login_user(user)
+            audit_log('LOGIN', 'User', user.id)
+            db.session.commit()
             # What does login_user() do?
             # - Creates session for user
             # - Sets current_user to this user
@@ -195,6 +201,8 @@ def login():
                 # Lock account after 5 failed attempts
                 if user.failed_login_attempts >= 5:
                     user.locked_until = datetime.utcnow() + timedelta(minutes=15)
+                    db.session.commit()
+                    audit_log('LOCKOUT', 'User', user.id, new_value={'failed_attempts': user.failed_login_attempts})
                     db.session.commit()
                     flash('Too many failed login attempts. Your account has been locked for 15 minutes.', 'danger')
                     
@@ -233,6 +241,8 @@ def logout():
     Returns:
         Redirect to login page
     """
+    audit_log('LOGOUT', 'User', current_user.id)
+    db.session.commit()
     logout_user()
     # What does logout_user() do?
     # - Removes user from session
@@ -263,6 +273,7 @@ def dashboard():
     from app.services.budget_service import BudgetService
     from datetime import datetime, timedelta
     from sqlalchemy import func
+    from sqlalchemy.orm import joinedload
     from app.models.transaction import Transaction
     
     # Get current month summary

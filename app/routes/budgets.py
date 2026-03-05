@@ -7,12 +7,13 @@ Why separate budgets blueprint?
 - Reusable across application
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.forms.budget import BudgetGoalForm
 from app.services.budget_service import BudgetService
 from app.services.category_service import CategoryService
+from app.utils.audit import audit_log
 from decimal import Decimal
 
 # Create blueprint
@@ -93,6 +94,14 @@ def create():
             # Refresh to load relationships
             db.session.refresh(budget_goal)
             
+            # Audit log
+            audit_log('CREATE', 'BudgetGoal', budget_goal.id, new_value={
+                'amount': str(budget_goal.amount),
+                'category_id': budget_goal.category_id,
+                'period': budget_goal.period
+            })
+            db.session.commit()
+            
             flash(f'Budget goal for {budget_goal.category.name} created successfully!', 'success')
             return redirect(url_for('budgets.index'))
             
@@ -101,7 +110,7 @@ def create():
         except Exception as e:
             db.session.rollback()
             flash('An error occurred while creating the budget goal.', 'danger')
-            print(f"Budget creation error: {e}")
+            current_app.logger.error(f'Budget creation failed: {e}', exc_info=True)
     
     return render_template(
         'budgets/create.html',
@@ -149,6 +158,13 @@ def edit(budget_id):
                 is_active=form.is_active.data
             )
             
+            # Audit log
+            audit_log('UPDATE', 'BudgetGoal', budget_id, new_value={
+                'amount': str(form.amount.data),
+                'period': form.period.data
+            })
+            db.session.commit()
+            
             flash('Budget goal updated successfully!', 'success')
             return redirect(url_for('budgets.index'))
             
@@ -157,10 +173,10 @@ def edit(budget_id):
         except Exception as e:
             db.session.rollback()
             flash('An error occurred while updating the budget goal.', 'danger')
-            print(f"Budget update error: {e}")
+            current_app.logger.error(f'Budget update failed: {e}', exc_info=True)
     elif request.method == 'POST':
         # Form validation failed
-        print(f"Form validation errors: {form.errors}")
+        current_app.logger.warning(f'Budget form validation errors: {form.errors}')
         for field, errors in form.errors.items():
             for error in errors:
                 flash(f'{field}: {error}', 'danger')
@@ -199,14 +215,16 @@ def delete(budget_id):
         Redirect to budgets list
     """
     try:
+        audit_log('DELETE', 'BudgetGoal', budget_id)
         BudgetService.delete_budget_goal(budget_id, current_user.id)
+        db.session.commit()
         flash('Budget goal deleted successfully!', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
     except Exception as e:
         db.session.rollback()
         flash('An error occurred while deleting the budget goal.', 'danger')
-        print(f"Budget deletion error: {e}")
+        current_app.logger.error(f'Budget deletion failed: {e}', exc_info=True)
     
     return redirect(url_for('budgets.index'))
 
@@ -237,6 +255,6 @@ def toggle_active(budget_id):
     except Exception as e:
         db.session.rollback()
         flash('An error occurred while toggling the budget goal.', 'danger')
-        print(f"Budget toggle error: {e}")
+        current_app.logger.error(f'Budget toggle failed: {e}', exc_info=True)
     
     return redirect(url_for('budgets.index'))

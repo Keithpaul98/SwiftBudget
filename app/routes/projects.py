@@ -2,11 +2,13 @@
 Project Routes - CRUD operations for projects.
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
 from app import db
 from app.forms.project import ProjectForm
 from app.services.project_service import ProjectService
+from app.utils.audit import audit_log
+import bleach
 
 projects_bp = Blueprint('projects', __name__, url_prefix='/projects')
 
@@ -27,16 +29,22 @@ def create():
     
     if form.validate_on_submit():
         try:
-            ProjectService.create_project(
+            project = ProjectService.create_project(
                 user_id=current_user.id,
-                name=form.name.data,
-                description=form.description.data,
+                name=bleach.clean(form.name.data, tags=[], strip=True),
+                description=bleach.clean(form.description.data or '', tags=[], strip=True),
                 color=form.color.data
             )
+            audit_log('CREATE', 'Project', project.id, new_value={'name': form.name.data})
+            db.session.commit()
             flash(f'Project "{form.name.data}" created successfully!', 'success')
             return redirect(url_for('projects.index'))
         except ValueError as e:
             flash(str(e), 'danger')
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while creating the project.', 'danger')
+            current_app.logger.error(f'Project creation failed: {e}', exc_info=True)
     
     return render_template('projects/create.html', form=form, title='New Project')
 
@@ -58,15 +66,21 @@ def edit(project_id):
             ProjectService.update_project(
                 project_id=project_id,
                 user_id=current_user.id,
-                name=form.name.data,
-                description=form.description.data,
+                name=bleach.clean(form.name.data, tags=[], strip=True),
+                description=bleach.clean(form.description.data or '', tags=[], strip=True),
                 color=form.color.data,
                 is_active=form.is_active.data
             )
+            audit_log('UPDATE', 'Project', project_id, new_value={'name': form.name.data})
+            db.session.commit()
             flash('Project updated successfully!', 'success')
             return redirect(url_for('projects.index'))
         except ValueError as e:
             flash(str(e), 'danger')
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while updating the project.', 'danger')
+            current_app.logger.error(f'Project update failed: {e}', exc_info=True)
     
     if request.method == 'GET':
         form.name.data = project.name
@@ -82,10 +96,16 @@ def edit(project_id):
 def delete(project_id):
     """Delete a project."""
     try:
+        audit_log('DELETE', 'Project', project_id)
         ProjectService.delete_project(project_id, current_user.id)
+        db.session.commit()
         flash('Project deleted successfully!', 'success')
     except ValueError as e:
         flash(str(e), 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the project.', 'danger')
+        current_app.logger.error(f'Project deletion failed: {e}', exc_info=True)
     
     return redirect(url_for('projects.index'))
 

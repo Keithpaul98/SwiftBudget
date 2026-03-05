@@ -15,6 +15,7 @@ from typing import List, Optional, Dict
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from sqlalchemy import func, and_, or_
+from sqlalchemy.orm import joinedload
 from app import db
 from app.models.transaction import Transaction
 from app.models.category import Category
@@ -133,7 +134,9 @@ class TransactionService:
         Returns:
             List of Transaction objects (newest first)
         """
-        query = Transaction.query.filter_by(user_id=user_id, is_deleted=False)
+        query = Transaction.query.options(
+            joinedload(Transaction.category)
+        ).filter_by(user_id=user_id, is_deleted=False)
         
         # Apply filters
         if category_id:

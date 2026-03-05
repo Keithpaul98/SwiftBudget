@@ -15,10 +15,10 @@ Reference: https://flask.palletsprojects.com/en/2.3.x/patterns/appfactories/
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from flask_bcrypt import Bcrypt
 from flask_mail import Mail
 from flask_limiter import Limiter
@@ -33,8 +33,14 @@ migrate = Migrate()
 login_manager = LoginManager()
 bcrypt = Bcrypt()
 mail = Mail()
+def get_user_identifier():
+    """Rate limit by user ID when authenticated, otherwise by IP."""
+    if current_user and hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+        return f"user:{current_user.id}"
+    return f"ip:{get_remote_address()}"
+
 limiter = Limiter(
-    key_func=get_remote_address,  # Rate limit by IP address
+    key_func=get_user_identifier,  # Rate limit by user when logged in, IP otherwise
     default_limits=["200 per day", "50 per hour"]  # Default limits for all routes
 )
 
@@ -118,16 +124,44 @@ def create_app(config_name=None):
     # Register error handlers
     register_error_handlers(app)
     
-    # Add security headers
-    @app.after_request
-    def set_security_headers(response):
-        """Add security headers to all responses."""
-        response.headers['X-Frame-Options'] = 'DENY'  # Prevent clickjacking
-        response.headers['X-Content-Type-Options'] = 'nosniff'  # Prevent MIME sniffing
-        response.headers['X-XSS-Protection'] = '1; mode=block'  # XSS protection
-        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-        response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
-        return response
+    # HTTPS enforcement with Flask-Talisman (production only)
+    if not app.config.get('DEBUG') and not app.config.get('TESTING'):
+        from flask_talisman import Talisman
+        Talisman(app,
+            force_https=True,
+            strict_transport_security=True,
+            strict_transport_security_max_age=31536000,  # 1 year
+            session_cookie_secure=True,
+            content_security_policy={
+                'default-src': "'self'",
+                'script-src': ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
+                'style-src': ["'self'", "'unsafe-inline'", "cdn.jsdelivr.net"],
+                'img-src': ["'self'", "data:"],
+                'font-src': ["'self'", "cdn.jsdelivr.net"],
+            }
+        )
+    else:
+        # In development/testing, add security headers manually (no HTTPS)
+        @app.after_request
+        def set_security_headers(response):
+            """Add security headers to all responses."""
+            response.headers['X-Frame-Options'] = 'DENY'
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+            response.headers['X-XSS-Protection'] = '1; mode=block'
+            response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+            response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+            return response
+    
+    # Health check endpoint
+    @app.route('/health')
+    def health_check():
+        """Health check endpoint for monitoring."""
+        try:
+            db.session.execute(db.text('SELECT 1'))
+            return jsonify({'status': 'healthy', 'database': 'connected'}), 200
+        except Exception as e:
+            app.logger.error(f'Health check failed: {e}')
+            return jsonify({'status': 'unhealthy', 'error': 'database connection failed'}), 503
     
     # Add currency to template context
     @app.context_processor
@@ -218,19 +252,24 @@ def register_error_handlers(app):
     def not_found_error(error):
         """Handle 404 Not Found errors."""
         app.logger.warning(f'404 error: {error}')
-        # TODO: Render custom 404 template in future module
         return {'error': 'Page not found'}, 404
     
     @app.errorhandler(500)
     def internal_error(error):
         """Handle 500 Internal Server errors."""
-        app.logger.error(f'500 error: {error}')
-        db.session.rollback()  # Rollback any failed database transactions
-        # TODO: Render custom 500 template in future module
+        app.logger.error(f'500 error: {error}', exc_info=True)
+        db.session.rollback()
         return {'error': 'Internal server error'}, 500
     
     @app.errorhandler(403)
     def forbidden_error(error):
-        """Handle 403 Forbidden errors (authorization failures)."""
+        """Handle 403 Forbidden errors."""
         app.logger.warning(f'403 error: {error}')
         return {'error': 'Access forbidden'}, 403
+    
+    @app.errorhandler(Exception)
+    def handle_exception(error):
+        """Handle all unhandled exceptions."""
+        app.logger.error(f'Unhandled exception: {error}', exc_info=True)
+        db.session.rollback()
+        return {'error': 'An unexpected error occurred'}, 500
